@@ -13,16 +13,14 @@
   =chrome= web browser inside Emacs/Exwm, a heavily metal ball
   witch causes nightmares.
 
-* Screenshot
+* Demo
 
   #+CAPTION: cannon
-  #+NAME:   fig:cannon completions box
+  #+NAME:   fig:cannon prompt
 
-  [[./assets/cannon.png]]
+  [[./assets/cannon.jpg]]
 
 * Dependencies
-
-  Elisp packages:
 
   - cl-lib
   - comint
@@ -35,7 +33,7 @@
 * Installation
 ** Cask
 
-   Add =cannon= git repository to the Cask file:
+   Add =Cannon= git repository to the ~Cask~ file:
 
    #+BEGIN_SRC emacs-lisp
 
@@ -44,18 +42,11 @@
 
    #+END_SRC
 
-   And run cask Install command:
-
-   #+BEGIN_SRC sh
-
-   $ cask install
-
-   #+END_SRC
+   Run =cask install= command.
 
 ** Manually
 
-   Clone this repository to any arbitrary location, e.g:
-   =~/.emacs.d/site-lisp/cannon=.
+   Clone =Cannon= repository to a arbitrary location:
 
    #+BEGIN_SRC sh
 
@@ -63,31 +54,33 @@
 
    #+END_SRC
 
-* Configure
-** Enables
-
-   Add the following snippet of code to you Emacs initialization file
-   (usually ~init.el~).
+   Add =Cannon= directory to =load-path= in your Emacs
+   initialization file (~init.el~) and load it.
 
    #+BEGIN_SRC emacs-lisp
 
-   ;; require cannon feature (load it)
+   ;; add to load-path
+   (add-to-list 'load-path "/replace/me/to/cannon/path")
+
+   ;; load cannon feature
    (require 'cannon nil t)
 
    #+END_SRC
 
-   Note: For a more dynamic approach uses =load-file= or
-         =load-library= functions, i.e, =M-x load-library RET cannon RET=.
-
-** Customize
-
-   Use emacs customize interface to see what options/values
-   are available =M-x customize-group RET cannon=.
+   - Note: For a more dynamic approach uses:
+     - =M-x load-file RET=
+     - =M-x load-library RET cannon RET=
 
 * Usage
 
-  =M-x cannon RET=, for convenience is recommend
-  to bind this function to some keybind of choice.
+  =M-x cannon RET=, select a executable in the prompt launch it =RET=.
+
+  - Note: it's recommend to bind =cannon= function to a keybind of
+    choice (mine: =C-x C-l=).
+
+* Customize
+
+  =M-x customize-group RET cannon=
 
 * References
 
