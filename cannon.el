@@ -209,10 +209,10 @@ command's arguments (no completions are available)."
       (message "Executable %s not found" cmd))))
 
 ;;;###autoload
-  (defun cannon-alt ()
-    "Call `cannon' with prefix argument."
-    (interactive)
-    (cannon 4))
+(defun cannon-alt ()
+  "Call `cannon' with prefix argument."
+  (interactive)
+  (cannon 4))
 
-  (provide 'cannon)
+(provide 'cannon)
 ;;; cannon.el ends here
