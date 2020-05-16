@@ -35,7 +35,7 @@
 * Installation
 ** Cask
 
-   Add =rfc-docs= git repository to the Cask file:
+   Add =cannon= git repository to the Cask file:
 
    #+BEGIN_SRC emacs-lisp
 
