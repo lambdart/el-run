@@ -91,7 +91,8 @@
 
 * References
 
-  1. [[][]]
+  1. [[https://tools.suckless.org/dmenu/][Dmenu]]
+  2. [[https://github.com/lujun9972/el-dmenu][El-dmenu]]
 
 * LICENSE
   MIT
