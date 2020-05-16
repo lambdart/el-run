@@ -145,7 +145,7 @@ Save the list of command candidates in `cannon-cmd-candidates-list'."
 (defun cannon-last-cmd ()
   "Get last command executed (if any) from `connan-history-list'."
   (when cannon-cmd-history-list
-    (car cannon-cmd-history-list))
+    (car cannon-cmd-history-list)))
 
 (defun cannon-save-items ()
   "Save cannon list to cache file.
