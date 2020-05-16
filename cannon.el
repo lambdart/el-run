@@ -99,24 +99,22 @@ be executed with TRAMP, this behavior isn't desire."
       (when (eq 'exit (process-status process))
         (kill-buffer (process-buffer process))))))
 
-(defun cannon--save-cmd-in-history-list (cmd)
+(defun cannon-ajust-history-size ()
+  "Ajust command history list size if necessary."
+  (cond ((< cannon-history-size 1)
+          (setq cannon-cmd-history-list nil))
+    ((> (length cannon-cmd-history-list) cannon-history-size)
+      (setcdr (nthcdr (- cannon-history-size 1) cannon-cmd-history-list) nil))))
+
+(defun cannon--save-history (cmd)
   "Save CMD to `cannon-history-list'."
   ;; if command is a member of candidates list, save it in list history
   (if (member (car (split-string cmd)) cannon-cmd-candidates-list)
     (setq cannon-cmd-history-list
       ;; avoid to save the same item on history list
-      (cons cmd (remove cmd cannon-cmd-history-list))))
-  (cond
-    ;; if custom history size is less then 1, set list to nil
-    ;; used to avoid unexpected errors
-    ((< cannon-history-size 1)
-      (setq cannon-cmd-history-list nil))
-    ;; if history list length is greater then custom history size
-    ;; replace item (command) in the history list
-    ((> (length cannon-cmd-history-list) cannon-history-size)
-      (setcdr (nthcdr (- cannon-history-size 1) cannon-cmd-history-list) nil))))
+      (cons cmd (remove cmd cannon-cmd-history-list)))))
 
-(defun cannon-set-cmd-candidates-list ()
+(defun cannon-set-candidates ()
   "Scan $PATH (`exec-path') for names of executable files.
 Save the list of command candidates in `cannon-cmd-candidates-list'."
   (let* ((valid-exec-path (seq-uniq
@@ -136,7 +134,7 @@ Save the list of command candidates in `cannon-cmd-candidates-list'."
 (defun cannon-parse-cmd-candidates ()
   "Parse launch candidates from history and executable lists."
   (unless cannon-cmd-candidates-list
-    (cannon-set-cmd-candidates-list))
+    (cannon-set-candidates))
   (let ((candidates
           (append cannon-cmd-history-list
             (cl-remove-if (lambda (x)
@@ -144,11 +142,10 @@ Save the list of command candidates in `cannon-cmd-candidates-list'."
               cannon-cmd-candidates-list))))
     candidates))
 
-(defun cannon-get-last-cmd ()
+(defun cannon-last-cmd ()
   "Get last command executed (if any) from `connan-history-list'."
-  (if cannon-cmd-history-list
-    (car cannon-cmd-history-list)
-    nil))
+  (when cannon-cmd-history-list
+    (car cannon-cmd-history-list))
 
 (defun cannon-save-items ()
   "Save cannon list to cache file.
@@ -189,16 +186,18 @@ command's arguments (no completions are available)."
   (interactive "p")
   (unless cannon-initialized-p
     (cannon-initialize))
-  (let ((cmd (completing-read cannon-prompt
-               (cannon-parse-cmd-candidates) nil t))
+  (let* ((line (completing-read cannon-prompt
+                 (cannon-parse-cmd-candidates) nil nil))
+          (cmd (car (split-string line)))
          (args (when (= prefix 4)
                  (split-string-and-unquote
                    (read-string cannon-args-prompt)))))
     (if (executable-find cmd)
       (progn
-        (cannon--save-cmd-in-history-list cmd)
+        (cannon--save-history cmd)
+        (cannon-ajust-history-size)
         (switch-to-buffer
-          (let* ((cmd-list (split-string-and-unquote cmd))
+          (let* ((cmd-list (split-string-and-unquote line))
                   (buffer (generate-new-buffer-name (concat "*" cmd "*")))
                   (program (car cmd-list))
                   (switches (append (cdr cmd-list) args))
