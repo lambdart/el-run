@@ -5,7 +5,7 @@
 ;; Author: esac <esac-io@tutanota.com>
 ;; Version: 0.2
 ;; URL: https://github.com/esac-io/cannon
-;; Compatibility: GNU Emacs 25.x
+;; Compatibility: GNU Emacs 26.3
 ;;
 ;; This file is NOT part of GNU Emacs.
 ;;
@@ -94,9 +94,8 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
   "Commands list.")
 
 (defvar cannon-internal-vars
-  '(cannon-cmd-list
-     cannon-cmd-history-list)
-  "Predicate to verify if cannon was initialized.")
+  '(cannon-cmd-list cannon-cmd-history-list)
+  "List of internal variables.")
 
 (defvar cannon-mode nil
   "Predicate to verify if cannon was initialized.")
@@ -169,8 +168,9 @@ Side effect: save the command list in `cannon-cmd-list'."
     (setq cannon-cmd-list
       (seq-uniq (sort executable-files #'string<)))))
 
-(defun cannon-candidates ()
-  "Return history plus commands candidates."
+(defun cannon-cmd-candidates ()
+  "Parse command candidates.
+Return history plus commands candidates."
   (let ((candidates (append cannon-cmd-history-list
                       (cl-remove-if
                         (lambda (x)
@@ -205,8 +205,8 @@ command's arguments (no completions are available)."
   ;; get command line from minibuffer prompt
   ;; verify command and maybe set args
   (let* ((cmd-line
-           (completing-read cannon-prompt (cannon-candidates)
-             nil 'confirm nil `(cannon-cmd-history-list . 0)))
+           (completing-read cannon-prompt (cannon-cmd-candidates) nil 'confirm
+             nil `(cannon-cmd-history-list . 0)))
           (cmd (car (split-string cmd-line)))
           (args (when (= prefix 4)
                   (split-string-and-unquote
@@ -215,7 +215,7 @@ command's arguments (no completions are available)."
     (unless (executable-find cmd)
       (error "Command %s not found" cmd))
     ;; save command line to history list
-    (cannon-add-cmd-to-history cmd)
+    (cannon-save-to-history cmd-line)
     ;; execute command (side effect: return buffer)
     ;; and switch to buffer
     (let* ((buffer
@@ -233,21 +233,15 @@ command's arguments (no completions are available)."
 (define-minor-mode cannon-mode
   "Toggle cannon-mode on/off." nil "Cannon" nil
   (if cannon-mode
-    ;; Enabling:
-    (condition-case error
-      (progn
-        ;; set lists
-        (cannon-set-cmd-list)
-        (cannon-set-cmd-history-list))
-      ;; add hooks
-      (add-hook 'kill-emacs-hook 'cannon-save-history)
-      (error
-        (cannon-mode 0)
-        (signal (car error) (cdr error))))
-    ;; Disabling:
-    (remove-hook 'kill-emacs-hook 'cannon-save-history)
+    (progn
+      (cannon-set-cmd-list)
+      (cannon-set-cmd-history-list)
+      (add-hook 'kill-emacs-hook 'cannon-save-history))
+    ;; clean internal variables
     (dolist (var cannon-internal-vars)
-      (set var nil))))
+      (set var nil))
+    ;; remove hook
+    (remove-hook 'kill-emacs-hook 'cannon-save-history)))
 
 (provide 'cannon)
 ;;; cannon.el ends here
