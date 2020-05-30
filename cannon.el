@@ -215,7 +215,7 @@ command's arguments (no completions are available)."
     (unless (executable-find cmd)
       (error "Command %s not found" cmd))
     ;; save command line to history list
-    (cannon-save-to-history cmd-line)
+    (cannon-add-cmd-to-history cmd-line)
     ;; execute command (side effect: return buffer)
     ;; and switch to buffer
     (let* ((buffer
