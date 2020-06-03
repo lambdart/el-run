@@ -168,13 +168,16 @@ Side effect: save the command list in `cannon-cmd-list'."
     (setq cannon-cmd-list
       (seq-uniq (sort executable-files #'string<)))))
 
-(defun cannon-cmd-candidates ()
+(defun cannon-cmd-parse-candidates ()
   "Parse command candidates.
 Return history plus commands candidates."
-  (let ((candidates (append cannon-cmd-history-list
+  (let* ((cmd-history-list
+           (cl-loop for cmd in cannon-cmd-history-list
+             collect (car (split-string cmd))))
+         (candidates (append cmd-history-list
                       (cl-remove-if
-                        (lambda (x)
-                          (member x cannon-cmd-history-list))
+                        (lambda (cmd)
+                              (member cmd cmd-history-list))
                         cannon-cmd-list))))
     candidates))
 
@@ -184,7 +187,7 @@ Return history plus commands candidates."
     (push cmd cannon-cmd-history-list)
     (cannon--adjust-history-size)))
 
-(defun cannon-save-history ()
+(defun cannon-save-cache ()
   "Save cannon history list to cache file."
   (with-temp-file (expand-file-name cannon-cache-file)
     (prin1 cannon-cmd-history-list (current-buffer))))
@@ -200,24 +203,24 @@ PREFIX will trigger a secondary prompt that asks for supplementary
 command's arguments (no completions are available)."
   (interactive "p")
   ;; set command candidates if necessary
-  (unless cannon-mode
-    (cannon-mode 1))
+  (unless cannon-mode (cannon-mode 1))
+
   ;; get command line from minibuffer prompt
   ;; verify command and maybe set args
   (let* ((cmd-line
-           (completing-read cannon-prompt (cannon-cmd-candidates) nil 'confirm
+           (completing-read cannon-prompt (cannon-cmd-parse-candidates) nil 'confirm
              nil `(cannon-cmd-history-list . 0)))
           (cmd (car (split-string cmd-line)))
           (args (when (= prefix 4)
                   (split-string-and-unquote
                     (read-string cannon-args-prompt)))))
+
     ;; verify if command from command line was found
     (unless (executable-find cmd)
       (error "Command %s not found" cmd))
     ;; save command line to history list
     (cannon-add-cmd-to-history cmd-line)
     ;; execute command (side effect: return buffer)
-    ;; and switch to buffer
     (let* ((buffer
              (cannon--make-comint-process cmd cmd-line args)))
       ;; verify if buffer was created
@@ -225,7 +228,7 @@ command's arguments (no completions are available)."
         (error "Was not possible to create *%s* buffer" cmd))
       ;; set process sentinel
       (cannon--set-process-sentinel buffer)
-      ;; if switch to buffer if flag is non-nil
+      ;; switch to buffer if flag is non-nil
       (when cannon-switch-to-buffer-flag
         (switch-to-buffer buffer)))))
 
@@ -236,12 +239,12 @@ command's arguments (no completions are available)."
     (progn
       (cannon-set-cmd-list)
       (cannon-set-cmd-history-list)
-      (add-hook 'kill-emacs-hook 'cannon-save-history))
+      (add-hook 'kill-emacs-hook 'cannon-save-cache))
     ;; clean internal variables
     (dolist (var cannon-internal-vars)
       (set var nil))
     ;; remove hook
-    (remove-hook 'kill-emacs-hook 'cannon-save-history)))
+    (remove-hook 'kill-emacs-hook 'cannon-save-cache)))
 
 (provide 'cannon)
 ;;; cannon.el ends here
