@@ -69,7 +69,7 @@
   :group 'cannon
   :safe t)
 
-(defcustom cannon-switch-to-buffer-flag t
+(defcustom cannon-switch-to-buffer-p t
   "Non-nil means will automatically switch to the created buffer."
   :type 'bool
   :group 'cannon
@@ -105,7 +105,6 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
 
 If default directory is at a remote location the command will
 be executed with TRAMP, this behavior isn't desired."
-
   (if (or (null default-directory)
         (file-remote-p default-directory))
     temporary-file-directory
@@ -122,10 +121,9 @@ Correctly handle process exit status, etc.."
 (defun cannon--make-comint-process (cmd cmd-line &optional args)
   "Start the process defined by CMD, using `apply' and `make-comint-in-buffer'.
 
-CMD primary command to be executed
+CMD      primary command to be executed
 CMD-LINE command plus arguments (command line)
-ARGS optional command arguments (switches, etc)"
-
+ARGS     optional command arguments (switches, etc)"
   ;; parse command list from command line
   (let* ((cmd-list (split-string-and-unquote cmd-line))
           (program (car cmd-list)) ; parse program name
@@ -174,17 +172,17 @@ Return history plus commands candidates."
   (let* ((cmd-history-list
            (cl-loop for cmd in cannon-cmd-history-list
              collect (car (split-string cmd))))
-         (candidates (append cmd-history-list
-                      (cl-remove-if
-                        (lambda (cmd)
-                              (member cmd cmd-history-list))
-                        cannon-cmd-list))))
+          (candidates (append cmd-history-list
+                        (cl-remove-if
+                          (lambda (cmd)
+                            (member cmd cmd-history-list))
+                          cannon-cmd-list))))
     candidates))
 
-(defun cannon-add-cmd-to-history (cmd)
-  "Add CMD (command) to `cannon-cmd-history-list'."
-  (unless (member cmd cannon-cmd-history-list)
-    (push cmd cannon-cmd-history-list)
+(defun cannon-add-cmd-line-to-history (cmd-line)
+  "Add CMD-LINE (command line) to `cannon-cmd-history-list'."
+  (unless (member cmd-line cannon-cmd-history-list)
+    (push cmd-line cannon-cmd-history-list)
     (cannon--adjust-history-size)))
 
 (defun cannon-save-cache ()
@@ -194,43 +192,44 @@ Return history plus commands candidates."
 
 ;;;###autoload
 (defun cannon-launch (&optional prefix)
-  "Interactive launch a command with PREFIX asks for command arguments.
+  "Launch system application.
+
+With universal \\[universal-argument] PREFIX
+asks for the application arguments in a
+secondary prompt.
 
 The candidates (executable names) will be parsed from
-$PATH environment variable a.k.a (`exec-path').
-
-PREFIX will trigger a secondary prompt that asks for supplementary
-command's arguments (no completions are available)."
+$PATH environment variable, i.e, `exec-path'."
   (interactive "p")
   ;; set command candidates if necessary
   (unless cannon-mode (cannon-mode 1))
-
   ;; get command line from minibuffer prompt
-  ;; verify command and maybe set args
-  (let* ((cmd-line
-           (completing-read cannon-prompt (cannon-cmd-parse-candidates) nil 'confirm
-             nil `(cannon-cmd-history-list . 0)))
+  (let* ((cmd-line (completing-read
+                     cannon-prompt (cannon-cmd-parse-candidates)
+                     nil 'confirm nil
+                     `(cannon-cmd-history-list . 0)))
           (cmd (car (split-string cmd-line)))
+          ;; verify universal argument
           (args (when (= prefix 4)
                   (split-string-and-unquote
                     (read-string cannon-args-prompt)))))
-
     ;; verify if command from command line was found
-    (unless (executable-find cmd)
-      (error "Command %s not found" cmd))
-    ;; save command line to history list
-    (cannon-add-cmd-to-history cmd-line)
-    ;; execute command (side effect: return buffer)
-    (let* ((buffer
-             (cannon--make-comint-process cmd cmd-line args)))
-      ;; verify if buffer was created
-      (unless buffer
-        (error "Was not possible to create *%s* buffer" cmd))
-      ;; set process sentinel
-      (cannon--set-process-sentinel buffer)
-      ;; switch to buffer if flag is non-nil
-      (when cannon-switch-to-buffer-flag
-        (switch-to-buffer buffer)))))
+    (if (not (executable-find cmd))
+      (message "Command %s not found" cmd)
+      ;; execute command (side effect: process buffer created)
+      (let* ((buffer (cannon--make-comint-process cmd cmd-line args)))
+        (cond
+          ;; verify if buffer was created
+          (buffer
+            ;; save command line to history list
+            (cannon-add-cmd-line-to-history cmd-line)
+            ;; set process sentinel
+            (cannon--set-process-sentinel buffer)
+            ;; switch to buffer if flag is non-nil
+            (when cannon-switch-to-buffer-p
+              (switch-to-buffer buffer)))
+          ;; default
+          (t (message "Creating *%s* buffer fail" cmd)))))))
 
 ;;;###autoload
 (define-minor-mode cannon-mode
