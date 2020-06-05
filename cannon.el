@@ -45,11 +45,18 @@
 (require 'seq)
 (require 'cl-lib)
 (require 'comint)
+(require 'easy-mmode)
 
 (defgroup cannon nil
   "Very simple (exec-path) command launcher."
   :group 'extensions
   :group 'convenience)
+
+;;;###autoload
+(defcustom cannon-minor-mode-string (purecopy " Cannon")
+  "String to display in mode line when Cannon Mode is enabled; nil for none."
+  :type '(choice string (const :tag "None" nil))
+  :group 'cannon)
 
 (defcustom cannon-prompt "Cannon: "
   "String to display in the initial `minibuffer' prompt."
@@ -70,7 +77,13 @@
   :safe t)
 
 (defcustom cannon-switch-to-buffer-p t
-  "Non-nil means will automatically switch to the created buffer."
+  "Non-nil means, switch to the created process buffer."
+  :type 'bool
+  :group 'cannon
+  :safe t)
+
+(defcustom cannon-kill-buffer-p t
+  "Non-nil means, automatically kill buffer when process exits."
   :type 'bool
   :group 'cannon
   :safe t)
@@ -98,7 +111,10 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
   "List of internal variables.")
 
 (defvar cannon-mode nil
-  "Predicate to verify if cannon was initialized.")
+  "Indicates if Cannon Mode was initialized.")
+
+;; (defvar global-cannon-mode nil
+;;   "Predicate to verify if cannon was initialized.")
 
 (defun cannon--check-default-directory ()
   "Check and return a proper `default-directory'.
@@ -115,8 +131,13 @@ be executed with TRAMP, this behavior isn't desired."
 Correctly handle process exit status, etc.."
   (set-process-sentinel (get-buffer-process buffer)
     (lambda (process event)
-      (when (eq 'exit (process-status process))
-        (kill-buffer (process-buffer process))))))
+      (cond
+        ;; handle exit process status
+        ((eq 'exit (process-status process))
+          (when cannon-kill-buffer-p
+            (kill-buffer (process-buffer process))))
+        ;; default: do nothing
+        (t nil)))))
 
 (defun cannon--make-comint-process (cmd cmd-line &optional args)
   "Start the process defined by CMD, using `apply' and `make-comint-in-buffer'.
@@ -124,6 +145,7 @@ Correctly handle process exit status, etc.."
 CMD      primary command to be executed
 CMD-LINE command plus arguments (command line)
 ARGS     optional command arguments (switches, etc)"
+
   ;; parse command list from command line
   (let* ((cmd-list (split-string-and-unquote cmd-line))
           (program (car cmd-list)) ; parse program name
@@ -151,7 +173,6 @@ ARGS     optional command arguments (switches, etc)"
 (defun cannon-set-cmd-list ()
   "Scan $PATH (`exec-path') for names of executable files.
 Side effect: save the command list in `cannon-cmd-list'."
-  (interactive)
   (let* ((valid-exec-path (seq-uniq
                             (cl-remove-if-not #'file-exists-p
                               (cl-remove-if-not #'stringp exec-path))))
@@ -233,17 +254,42 @@ $PATH environment variable, i.e, `exec-path'."
 
 ;;;###autoload
 (define-minor-mode cannon-mode
-  "Toggle cannon-mode on/off." nil "Cannon" nil
-  (if cannon-mode
-    (progn
+  "Toggle cannon-mode application launcher.
+With a prefix argument ARG, enable Cannon-mode if ARG
+is positive, and disable it otherwise."
+  :group cannon :lighter cannon-minor-mode-string
+  ;; "Cannon" nil
+  (cond
+    (cannon-mode
+      ;; initialize lists
       (cannon-set-cmd-list)
       (cannon-set-cmd-history-list)
+      ;; add hook to call cannon-save-cache
       (add-hook 'kill-emacs-hook 'cannon-save-cache))
-    ;; clean internal variables
-    (dolist (var cannon-internal-vars)
-      (set var nil))
-    ;; remove hook
-    (remove-hook 'kill-emacs-hook 'cannon-save-cache)))
+    (t
+      ;; clean internal variables
+      (dolist (var cannon-internal-vars)
+        (set var nil))
+      ;; save cache
+      (cannon-save-cache)
+      ;; remove hook
+      (remove-hook 'kill-emacs-hook 'cannon-save-cache))))
+
+;; TODO: research
+;; ;;;###autoload
+;; (define-globalized-minor-mode global-cannon-mode cannon-mode turn-on-cannon-mode
+;;   :group 'cannon
+;;   :initialize 'custom-initialize-delay
+;;   :init-value nil)
+
+
+;;;###autoload
+(defun turn-on-cannon-mode ()
+  "Turn on `cannon-mode'.
+See `cannon-launch' for more detail."
+  (interactive)
+  (unless cannon-mode
+    (cannon-mode 1)))
 
 (provide 'cannon)
 ;;; cannon.el ends here
