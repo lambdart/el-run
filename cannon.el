@@ -76,14 +76,14 @@
   :group 'cannon
   :safe t)
 
-(defcustom cannon-switch-to-buffer-p t
-  "Non-nil means, switch to the created process buffer."
+(defcustom cannon-switch-to-buffer-flag t
+  "Non-nil means switch to the created process buffer."
   :type 'bool
   :group 'cannon
   :safe t)
 
-(defcustom cannon-kill-buffer-p t
-  "Non-nil means, automatically kill buffer when process exits."
+(defcustom cannon-kill-buffer-flag t
+  "Non-nil means automatically kill buffer when process exits."
   :type 'bool
   :group 'cannon
   :safe t)
@@ -134,7 +134,7 @@ Correctly handle process exit status, etc.."
       (cond
         ;; handle exit process status
         ((eq 'exit (process-status process))
-          (when cannon-kill-buffer-p
+          (when cannon-kill-buffer-flag
             (kill-buffer (process-buffer process))))
         ;; default: do nothing
         (t nil)))))
@@ -171,8 +171,8 @@ ARGS     optional command arguments (switches, etc)"
           (setq cannon-cmd-history-list (read (current-buffer))))))))
 
 (defun cannon-set-cmd-list ()
-  "Scan $PATH (`exec-path') for names of executable files.
-Side effect: save the command list in `cannon-cmd-list'."
+  "Scan $PATH, i.e, \\[exec-path] for names of executable files.
+Side effect: save the commands in `cannon-cmd-list' list."
   (let* ((valid-exec-path (seq-uniq
                             (cl-remove-if-not #'file-exists-p
                               (cl-remove-if-not #'stringp exec-path))))
@@ -220,7 +220,8 @@ asks for the application arguments in a
 secondary prompt.
 
 The candidates (executable names) will be parsed from
-$PATH environment variable, i.e, `exec-path'."
+$PATH environment variable, i.e, \\[exec-path]."
+
   (interactive "p")
   ;; set command candidates if necessary
   (unless cannon-mode (cannon-mode 1))
@@ -247,7 +248,7 @@ $PATH environment variable, i.e, `exec-path'."
             ;; set process sentinel
             (cannon--set-process-sentinel buffer)
             ;; switch to buffer if flag is non-nil
-            (when cannon-switch-to-buffer-p
+            (when cannon-switch-to-buffer-flag
               (switch-to-buffer buffer)))
           ;; default
           (t (message "Creating *%s* buffer fail" cmd)))))))
