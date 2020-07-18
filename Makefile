@@ -1,27 +1,31 @@
 # Emacs invocation
-EMACS_COMMAND := emacs
+EMACS = emacs
 
-# do not load an init file: -q
-# avoid processing X resources: -Q
-# send messages to stderr: --batch
-EMACS := $(EMACS_COMMAND) -Q -q --batch
+# Remove command
+RM = rm -f
 
-EVAL   := $(EMACS) --eval
-SCRIPT := $(EMACS) --script
+# Define Compile Command (CC)
+# Don't load an init file: -q
+# Avoid processing X resources: -Q
+# Send messages to stderr: --batch
+# Call batch-byte-compile function: -f
+CC := $(EMACS) -Q -q --batch -f batch-byte-compile
+
+# Expand the source code files
+EL != ls *.el
 
 # Compiled files
 ELC := $(EL:.el=.elc)
 
-.PHONY: all
+# transform lisp text (.el) files in byte compiled (.elc) files
+$(ELC): $(EL)
+	$(CC) ${.ALLSRC}
 
-# Compile all files at once
-batch-compile:
-	$(EMACS) $(LOADPATH) -f batch-byte-compile $(INIT)
-
-all: batch-compile
-
-$(ELC): %.elc: %.el
-	$(EMACS) -f batch-byte-compile $<
+# Entry Point
+all: compile
 
 # Compile needed files
 compile: $(ELC)
+
+clean:
+	${RM} *.elc
