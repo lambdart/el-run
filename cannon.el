@@ -187,17 +187,28 @@ ARGS     optional command arguments (switches, etc)"
 (defun cannon-set-cmd-list ()
   "Scan $PATH, i.e, \\[exec-path] for names of executable files.
 Side effect, save the commands in `cannon-cmd-list' list."
-  (let* ((valid-exec-path
+  (let* (
+         ;; set variable and filter
+         ;; get the unique valid paths and clean
+         ;; if isn't a valid a string
+         (valid-exec-path
           (seq-uniq (cl-remove-if-not #'file-exists-p
                                       (cl-remove-if-not #'stringp exec-path))))
+
+         ;; return a list of names of files in a directory
          (files (cl-mapcan
                  (lambda (dir)
                    (directory-files dir t nil nil))
                  valid-exec-path))
+
+         ;; filter: clean non-executable and non-regular files
          (executable-files
           (mapcar #'file-name-nondirectory
                   (cl-remove-if #'file-directory-p
-                                (cl-remove-if-not #'file-executable-p files)))))
+                                (cl-remove-if-not
+                                 #'file-executable-p files)))))
+
+    ;; side effect: return (set command list),
     ;; unique and sorted command candidates
     (setq cannon-cmd-list
           (seq-uniq
