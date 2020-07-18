@@ -38,7 +38,22 @@
 ;; environment variable using Emacs vanilla builtin
 ;; facilities (minibuffer/completions).
 ;;
-;; PS: Works pretty well with icomplete (rocks)!
+;; If you use =Exwm=, i.e, =Emacs= also as your =Xorg Window Manager=
+;; this package will be a good choice to launch =X11= applications,
+;; like: =mpv=, =mupdf=, empowering even more the user experience.
+;;
+;; In more details, a simple lightweight application launcher that
+;; has no outside dependencies (we rely on the =completing-read=
+;; built-in =C= function), but if you use some narrowing/selecting
+;; framework, like - =helm=, =ivy=, etc - it's easy to use =cannon= as
+;; a source for candidates, just call/invoke the function
+;; =cannon-get-cmd-candidates= at some point inside you =Elisp=
+;; interface code to get the executable candidates.
+;;
+;; The name is a joke about launching =Chrome= web browser inside
+;; =Emacs/Exwm=, a heavily metal ball which causes nightmares.
+;;
+;; PS: Works pretty well with Icomplete! (rules)!
 ;;
 ;;; Code:
 
@@ -70,8 +85,8 @@
   :group 'cannon
   :safe t)
 
-(defcustom cannon-history-size 8
-  "Determines on how many recently executed commands should be recorded."
+(defcustom cannon-history-size 16
+  "A number to determinate how many recently commands should be recorded."
   :type 'integer
   :group 'cannon
   :safe t)
@@ -90,7 +105,7 @@
 
 (defcustom cannon-cache-file
   (expand-file-name "cannon" user-emacs-directory)
-  "Cannon cache file.
+  "Cannon cache file, were the generated list will be saved.
 
 File in which the launch candidates are save.
 This will provide persistence between Emacs sessions,
@@ -113,31 +128,29 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
 (defvar cannon-mode nil
   "Indicates if Cannon Mode was initialized.")
 
-;; (defvar global-cannon-mode nil
-;;   "Predicate to verify if cannon was initialized.")
-
 (defun cannon--check-default-directory ()
   "Check and return a proper `default-directory'.
 
 If default directory is at a remote location the command will
 be executed with TRAMP, this behavior isn't desired."
   (if (or (null default-directory)
-        (file-remote-p default-directory))
-    temporary-file-directory
+          (file-remote-p default-directory))
+      temporary-file-directory
     default-directory))
 
 (defun cannon--set-process-sentinel (buffer)
   "Set process sentinel related to BUFFER.
 Correctly handle process exit status, etc.."
-  (set-process-sentinel (get-buffer-process buffer)
-    (lambda (process event)
-      (cond
-        ;; handle exit process status
-        ((eq 'exit (process-status process))
-          (when cannon-kill-buffer-flag
-            (kill-buffer (process-buffer process))))
-        ;; default: do nothing
-        (t nil)))))
+  (set-process-sentinel
+   (get-buffer-process buffer)
+   (lambda (process event)
+     (cond
+      ;; handle exit process status
+      ((eq 'exit (process-status process))
+       (when cannon-kill-buffer-flag
+         (kill-buffer (process-buffer process))))
+      ;; default: do nothing
+      (t nil)))))
 
 (defun cannon--make-comint-process (cmd cmd-line &optional args)
   "Start the process defined by CMD, using `apply' and `make-comint-in-buffer'.
@@ -148,17 +161,17 @@ ARGS     optional command arguments (switches, etc)"
 
   ;; parse command list from command line
   (let* ((cmd-list (split-string-and-unquote cmd-line))
-          (program (car cmd-list)) ; parse program name
-          (buffer (generate-new-buffer-name (concat "*" cmd "*")))
-          (switches (append (cdr cmd-list) nil)) ; set program switches
-          ;; check default-directory to avoid remote execution
-          ;; through tramp
-          (default-directory (cannon--check-default-directory)))
+         (program (car cmd-list)) ; parse program name
+         (buffer (generate-new-buffer-name (concat "*" cmd "*")))
+         (switches (append (cdr cmd-list) nil)) ; set program switches
+         ;; check default-directory to avoid remote execution
+         ;; through tramp
+         (default-directory (cannon--check-default-directory)))
     ;; execute command: (create a comint in buffer)
     (apply #'make-comint-in-buffer cmd buffer program nil switches)))
 
-(defun cannon--adjust-history-size ()
-  "Adjust history list size."
+(defun cannon--clean-cmd-history-list ()
+  "Clean command history list, adjust its size."
   (when (> (length cannon-cmd-history-list) cannon-history-size)
     (setcdr (nthcdr (- cannon-history-size 1) cannon-cmd-history-list) nil)))
 
@@ -166,47 +179,51 @@ ARGS     optional command arguments (switches, etc)"
   "Initialize `cannon-cmd-history-list' from `cannon-cache-file'."
   (let ((cache-file (expand-file-name cannon-cache-file)))
     (when (file-readable-p cache-file)
-      (with-temp-buffer (insert-file-contents cache-file)
+      (with-temp-buffer
+        (insert-file-contents cache-file)
         (ignore-errors
           (setq cannon-cmd-history-list (read (current-buffer))))))))
 
 (defun cannon-set-cmd-list ()
   "Scan $PATH, i.e, \\[exec-path] for names of executable files.
-Side effect: save the commands in `cannon-cmd-list' list."
-  (let* ((valid-exec-path (seq-uniq
-                            (cl-remove-if-not #'file-exists-p
-                              (cl-remove-if-not #'stringp exec-path))))
-          (files (cl-mapcan
-                   (lambda (dir) (directory-files dir t nil nil))
-                   valid-exec-path))
-          (executable-files (mapcar #'file-name-nondirectory
-                              (cl-remove-if #'file-directory-p
-                                (cl-remove-if-not #'file-executable-p
-                                  files)))))
+Side effect, save the commands in `cannon-cmd-list' list."
+  (let* ((valid-exec-path
+          (seq-uniq (cl-remove-if-not #'file-exists-p
+                                      (cl-remove-if-not #'stringp exec-path))))
+         (files (cl-mapcan
+                 (lambda (dir)
+                   (directory-files dir t nil nil))
+                 valid-exec-path))
+         (executable-files
+          (mapcar #'file-name-nondirectory
+                  (cl-remove-if #'file-directory-p
+                                (cl-remove-if-not #'file-executable-p files)))))
     ;; unique and sorted command candidates
     (setq cannon-cmd-list
-      (seq-uniq (sort executable-files #'string<)))))
+          (seq-uniq
+           (sort executable-files #'string<)))))
 
-(defun cannon-cmd-parse-candidates ()
-  "Parse command candidates.
+(defun cannon-get-cmd-candidates ()
+  "Get command candidates.
 Return history plus commands candidates."
   (let* ((cmd-history-list
-           (cl-loop for cmd in cannon-cmd-history-list
-             collect (car (split-string cmd))))
-          (candidates (append cmd-history-list
-                        (cl-remove-if
-                          (lambda (cmd)
-                            (member cmd cmd-history-list))
-                          cannon-cmd-list))))
+          (cl-loop for cmd in cannon-cmd-history-list
+                   collect (car (split-string cmd))))
+         (candidates
+          (append cmd-history-list
+                  (cl-remove-if
+                   (lambda (cmd)
+                     (member cmd cmd-history-list))
+                   cannon-cmd-list))))
     candidates))
 
 (defun cannon-add-cmd-line-to-history (cmd-line)
   "Add CMD-LINE (command line) to `cannon-cmd-history-list'."
   (unless (member cmd-line cannon-cmd-history-list)
     (push cmd-line cannon-cmd-history-list)
-    (cannon--adjust-history-size)))
+    (cannon--clean-cmd-history-list)))
 
-(defun cannon-save-cache ()
+(defun cannon-save-cache-file ()
   "Save cannon history list to cache file."
   (with-temp-file (expand-file-name cannon-cache-file)
     (prin1 cannon-cmd-history-list (current-buffer))))
@@ -226,32 +243,33 @@ $PATH environment variable, i.e, \\[exec-path]."
   ;; set command candidates if necessary
   (unless cannon-mode (cannon-mode 1))
   ;; get command line from minibuffer prompt
-  (let* ((cmd-line (completing-read
-                     cannon-prompt (cannon-cmd-parse-candidates)
-                     nil 'confirm nil
-                     `(cannon-cmd-history-list . 0)))
-          (cmd (car (split-string cmd-line)))
-          ;; verify universal argument
-          (args (when (= prefix 4)
-                  (split-string-and-unquote
-                    (read-string cannon-args-prompt)))))
+  (let* ((cmd-line (completing-read cannon-prompt
+                                    (cannon-get-cmd-candidates)
+                                    nil 'confirm nil
+                                    `(cannon-cmd-history-list . 0)))
+         ;; set cmd
+         (cmd (car (split-string cmd-line)))
+         ;; verify universal argument
+         (args (when (= prefix 4)
+                 (split-string-and-unquote
+                  (read-string cannon-args-prompt)))))
     ;; verify if command from command line was found
     (if (not (executable-find cmd))
-      (message "Command %s not found" cmd)
+        (message "Command %s not found" cmd)
       ;; execute command (side effect: process buffer created)
       (let* ((buffer (cannon--make-comint-process cmd cmd-line args)))
         (cond
-          ;; verify if buffer was created
-          (buffer
-            ;; save command line to history list
-            (cannon-add-cmd-line-to-history cmd-line)
-            ;; set process sentinel
-            (cannon--set-process-sentinel buffer)
-            ;; switch to buffer if flag is non-nil
-            (when cannon-switch-to-buffer-flag
-              (switch-to-buffer buffer)))
-          ;; default
-          (t (message "Creating *%s* buffer fail" cmd)))))))
+         ;; verify if buffer was created
+         (buffer
+          ;; save command line to history list
+          (cannon-add-cmd-line-to-history cmd-line)
+          ;; set process sentinel
+          (cannon--set-process-sentinel buffer)
+          ;; switch to buffer if flag is non-nil
+          (when cannon-switch-to-buffer-flag
+            (switch-to-buffer buffer)))
+         ;; default
+         (t (message "Creating *%s* buffer fail" cmd)))))))
 
 ;;;###autoload
 (define-minor-mode cannon-mode
@@ -261,36 +279,34 @@ is positive, and disable it otherwise."
   :group cannon :lighter cannon-minor-mode-string
   ;; "Cannon" nil
   (cond
-    (cannon-mode
-      ;; initialize lists
-      (cannon-set-cmd-list)
-      (cannon-set-cmd-history-list)
-      ;; add hook to call cannon-save-cache
-      (add-hook 'kill-emacs-hook 'cannon-save-cache))
-    (t
-      ;; clean internal variables
-      (dolist (var cannon-internal-vars)
-        (set var nil))
-      ;; save cache
-      (cannon-save-cache)
-      ;; remove hook
-      (remove-hook 'kill-emacs-hook 'cannon-save-cache))))
-
-;; TODO: research
-;; ;;;###autoload
-;; (define-globalized-minor-mode global-cannon-mode cannon-mode turn-on-cannon-mode
-;;   :group 'cannon
-;;   :initialize 'custom-initialize-delay
-;;   :init-value nil)
-
+   (cannon-mode
+    ;; initialize lists
+    (cannon-set-cmd-list)
+    (cannon-set-cmd-history-list)
+    ;; add hook to call cannon-save-cache-file
+    (add-hook 'kill-emacs-hook 'cannon-save-cache-file))
+   (t
+    ;; clean internal variables
+    (dolist (var cannon-internal-vars)
+      (set var nil))
+    ;; save cache
+    (cannon-save-cache-file)
+    ;; remove hook
+    (remove-hook 'kill-emacs-hook 'cannon-save-cache-file))))
 
 ;;;###autoload
 (defun turn-on-cannon-mode ()
   "Turn on `cannon-mode'.
-See `cannon-launch' for more detail."
+See `cannon-launch' for more details."
   (interactive)
-  (unless cannon-mode
-    (cannon-mode 1)))
+  (unless cannon-mode (cannon-mode 1)))
+
+;;;###autoload
+(defun turn-off-cannon-mode ()
+  "Turn on `cannon-mode'.
+See `cannon-launch' for more details."
+  (interactive)
+  (when cannon-mode (cannon-mode 0)))
 
 (provide 'cannon)
 ;;; cannon.el ends here
