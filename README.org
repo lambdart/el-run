@@ -3,15 +3,25 @@
 
 * Introduction
 
-  Cannon is a simple command launcher that mimics
-  Dmenu application.
+  Cannon is a simple command launcher written in pure
+  =Elisp=, it mimics the beloved =Dmenu= and targets =Emacs=
+  aficionados which has no desired to leave their favorite
+  interpreter.
 
-* Motivation
+  If you use =Exwm=, i.e, =Emacs= also as your =Xorg Window Manager=
+  this package will be a good choice to launch =X11= applications,
+  like: =mpv=, =mupdf=, empowering even more the user experience.
 
-  Just missing a simple app launcher on Emacs that has no
-  =helm= or =ivy= dependencies. The name is a joke about launching
-  =chrome= web browser inside Emacs/Exwm, a heavily metal ball
-  witch causes nightmares.
+  In more details, a simple lightweight application launcher that
+  has no outside dependencies (we rely on the =completing-read=
+  built-in =C= function), but if you use some narrowing/selecting
+  framework, like - =helm=, =ivy=, etc - it's easy to use =cannon= as
+  a source for candidates, just call/invoke the function
+  =cannon-get-cmd-candidates= at some point inside you =Elisp=
+  interface code to get the executable candidates.
+
+  The name is a joke about launching =Chrome= web browser inside
+  =Emacs/Exwm=, a heavily metal ball which causes nightmares.
 
 * Demo
 
@@ -28,22 +38,11 @@
 
 * Tested on
 
-  - Emacs >= 26.3
+  - Emacs 26.3
+  - Emacs 28.0.50
+    . For FreeBSD users: emacs-devel ports.
 
 * Installation
-** Cask
-
-   Add =Cannon= git repository to the ~Cask~ file:
-
-   #+BEGIN_SRC emacs-lisp
-
-   (depends-on "cannon"
-               :git "https://github.com/esac-io/cannon")
-
-   #+END_SRC
-
-   Run =cask install= command.
-
 ** Manually
 
    Clone =Cannon= repository to a arbitrary location:
@@ -54,8 +53,8 @@
 
    #+END_SRC
 
-   Add =Cannon= directory to =load-path= in your Emacs
-   initialization file (~init.el~) and load it.
+   Add =Cannon= directory to =load-path= in your
+   Emacs initialization file (~init.el~) and load it.
 
    #+BEGIN_SRC emacs-lisp
 
@@ -67,20 +66,65 @@
 
    #+END_SRC
 
-   - Note: For a more dynamic approach uses:
+   - Note: For a more dynamic approach:
      - =M-x load-file RET=
      - =M-x load-library RET cannon RET=
 
+** Compile
+
+   * Note: Optional but recommended.
+
+   To compile the files the the byte-compiled =Elisp= representation:
+
+   #+BEGIN_SRC sh
+
+   [at-cannon-root-directory]$ make
+
+   #+END_SRC
+
 * Usage
 
-  =M-x cannon RET=, select a executable in the prompt launch it =RET=.
+  =M-x cannon-launch RET=, write.select an executable in the prompt and launch it
+  with =RET=.
 
-  - Note: it's recommend to bind =cannon= function to a keybind of
-    choice (mine: =C-x C-l=).
+  - Note: it's recommend to bind =cannon-launch= function to some keybind of
+    choice, for quick access. (mine: =C-x C-l=).
+
+  - Note: to enable/disable the minor mode dynamically:
+    =M-x turn-on-cannon-mode RET= and =M-x turn-off-cannon-mode RET=.
+
+  That's all! :D
 
 * Customize
 
-  =M-x customize-group RET cannon=
+  * Note: To see all the options inside =Emacs= and customize it,
+    uses: =M-x customize-group RET cannon RET=.
+
+  We have a few options available to customize some aspects of cannon,
+  the behavior probably will be the same and remember this package
+  was design having vanilla =Emacs= on mind, if you are missing
+  something will be necessary to properly extend it.
+
+- =cannon-prompt= :: String to display in the initial 'minibuffer'
+  prompt (default 'Cannon').
+
+- =cannon-args-prompt= :: String to display in the initial
+  'minibuffer' prompt (default 'Args').
+
+- =cannon-history-size= :: A number that determines how many
+  recently executed commands should be recorded (default 16).
+
+- =cannon-switch-to-buffer-flag= :: Non-nil means switch to the
+  created process buffer (default true: t).
+
+- =cannon-kill-buffer-flag= :: Non-nil means automatically kill buffer
+  when process exits. (default true: t).
+
+- =cannon-buffer-flag= :: Non-nil means automatically kill buffer
+  when process exits. (default true: t).
+
+- =cannon-cache-file= :: Cache file path, where the generated
+  (command and history) lists will be saved.
 
 * References
 
