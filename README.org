@@ -40,7 +40,7 @@
 
   - Emacs 26.3
   - Emacs 28.0.50
-    . For FreeBSD users: emacs-devel ports.
+    - For FreeBSD users: the emacs-devel port.
 
 * Installation
 ** Manually
@@ -106,10 +106,10 @@
   something will be necessary to properly extend it.
 
 - =cannon-prompt= :: String to display in the initial 'minibuffer'
-  prompt (default 'Cannon').
+  prompt (default "Cannon").
 
 - =cannon-args-prompt= :: String to display in the initial
-  'minibuffer' prompt (default 'Args').
+  'minibuffer' prompt (default "Args").
 
 - =cannon-history-size= :: A number that determines how many
   recently executed commands should be recorded (default 16).
@@ -118,9 +118,6 @@
   created process buffer (default true: t).
 
 - =cannon-kill-buffer-flag= :: Non-nil means automatically kill buffer
-  when process exits. (default true: t).
-
-- =cannon-buffer-flag= :: Non-nil means automatically kill buffer
   when process exits. (default true: t).
 
 - =cannon-cache-file= :: Cache file path, where the generated
