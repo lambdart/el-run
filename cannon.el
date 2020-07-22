@@ -113,7 +113,7 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
 
   :type 'string
   :group 'cannon
-  :safe nil)
+ :safe nil)
 
 (defvar cannon-cmd-history-list nil
   "Commands history list.")
@@ -172,8 +172,11 @@ ARGS     optional command arguments (switches, etc)"
 
 (defun cannon--clean-cmd-history-list ()
   "Clean command history list, adjust its size."
-  (when (> (length cannon-cmd-history-list) cannon-history-size)
-    (setcdr (nthcdr (- cannon-history-size 1) cannon-cmd-history-list) nil)))
+  (when (> (length cannon-cmd-history-list)
+           cannon-history-size)
+    (setcdr (nthcdr (- cannon-history-size 1)
+                    cannon-cmd-history-list)
+            nil)))
 
 (defun cannon-set-cmd-history-list ()
   "Initialize `cannon-cmd-history-list' from `cannon-cache-file'."
@@ -182,7 +185,8 @@ ARGS     optional command arguments (switches, etc)"
       (with-temp-buffer
         (insert-file-contents cache-file)
         (ignore-errors
-          (setq cannon-cmd-history-list (read (current-buffer))))))))
+          (setq cannon-cmd-history-list
+                (read (current-buffer))))))))
 
 (defun cannon-set-cmd-list ()
   "Scan $PATH, i.e, \\[exec-path] for names of executable files.
@@ -250,7 +254,7 @@ secondary prompt.
 The candidates (executable names) will be parsed from
 $PATH environment variable, i.e, \\[exec-path]."
 
-  (interactive "p")
+  (interactive "P")
   ;; set command candidates if necessary
   (unless cannon-mode (cannon-mode 1))
   ;; get command line from minibuffer prompt
@@ -261,7 +265,7 @@ $PATH environment variable, i.e, \\[exec-path]."
          ;; set cmd
          (cmd (car (split-string cmd-line)))
          ;; verify universal argument
-         (args (when (= prefix 4)
+         (args (when prefix
                  (split-string-and-unquote
                   (read-string cannon-args-prompt)))))
     ;; verify if command from command line was found
