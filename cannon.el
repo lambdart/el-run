@@ -268,9 +268,10 @@ $PATH environment variable, i.e, \\[exec-path]."
          (args (when prefix
                  (split-string-and-unquote
                   (read-string cannon-args-prompt)))))
+
     ;; verify if command from command line was found
-    (if (not (executable-find cmd))
-        (message "Command %s not found" cmd)
+    (if (or (not cmd) (not (executable-find cmd)))
+        (message "Command not found")
       ;; execute command (side effect: process buffer created)
       (let* ((buffer (cannon--make-comint-process cmd cmd-line args)))
         (cond
