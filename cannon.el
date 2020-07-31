@@ -113,7 +113,7 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
 
   :type 'string
   :group 'cannon
- :safe nil)
+  :safe nil)
 
 (defvar cannon-cmd-history-list nil
   "Commands history list.")
@@ -163,7 +163,7 @@ ARGS     optional command arguments (switches, etc)"
   (let* ((cmd-list (split-string-and-unquote cmd-line))
          (program (car cmd-list)) ; parse program name
          (buffer (generate-new-buffer-name (concat "*" cmd "*")))
-         (switches (append (cdr cmd-list) nil)) ; set program switches
+         (switches (append (cdr cmd-list) args)) ; set program switches
          ;; check default-directory to avoid remote execution
          ;; through tramp
          (default-directory (cannon--check-default-directory)))
@@ -198,20 +198,17 @@ Side effect, save the commands in `cannon-cmd-list' list."
          (valid-exec-path
           (seq-uniq (cl-remove-if-not #'file-exists-p
                                       (cl-remove-if-not #'stringp exec-path))))
-
          ;; return a list of names of files in a directory
          (files (cl-mapcan
                  (lambda (dir)
                    (directory-files dir t nil nil))
                  valid-exec-path))
-
          ;; filter: clean non-executable and non-regular files
          (executable-files
           (mapcar #'file-name-nondirectory
                   (cl-remove-if #'file-directory-p
                                 (cl-remove-if-not
                                  #'file-executable-p files)))))
-
     ;; side effect: return (set command list),
     ;; unique and sorted command candidates
     (setq cannon-cmd-list
@@ -244,36 +241,39 @@ Return history plus commands candidates."
     (prin1 cannon-cmd-history-list (current-buffer))))
 
 ;;;###autoload
-(defun cannon-launch (&optional prefix)
-  "Launch system application.
+(defun cannon-launch (cmd-line &optional args)
+  "Launch a system application defined by CMD-LINE.
 
-With universal \\[universal-argument] PREFIX
-asks for the application arguments in a
-secondary prompt.
+If \\[universal-argument] prefix, asks for the application
+ARGS - arguments in a secondary prompt.
 
 The candidates (executable names) will be parsed from
 $PATH environment variable, i.e, \\[exec-path]."
 
-  (interactive "P")
+  (interactive
+   (list
+    ;; map cmd-line, if this functions was
+    ;; called interactively
+    (completing-read cannon-prompt
+                     (cannon-get-cmd-candidates)
+                     nil 'confirm nil
+                     `(cannon-cmd-history-list . 0))
+
+    ;; if prefix, asks for arguments
+    (when current-prefix-arg
+      (read-string cannon-args-prompt))))
+
   ;; set command candidates if necessary
   (unless cannon-mode (cannon-mode 1))
-  ;; get command line from minibuffer prompt
-  (let* ((cmd-line (completing-read cannon-prompt
-                                    (cannon-get-cmd-candidates)
-                                    nil 'confirm nil
-                                    `(cannon-cmd-history-list . 0)))
-         ;; set cmd
-         (cmd (car (split-string cmd-line)))
-         ;; verify universal argument
-         (args (when prefix
-                 (split-string-and-unquote
-                  (read-string cannon-args-prompt)))))
 
+  ;; get command line from minibuffer prompt
+  (let* ((cmd (car (split-string cmd-line)))
+         (args (and args (split-string-and-unquote args))))
     ;; verify if command from command line was found
     (if (or (not cmd) (not (executable-find cmd)))
         (message "Command not found")
       ;; execute command (side effect: process buffer created)
-      (let* ((buffer (cannon--make-comint-process cmd cmd-line args)))
+      (let ((buffer (cannon--make-comint-process cmd cmd-line args)))
         (cond
          ;; verify if buffer was created
          (buffer
