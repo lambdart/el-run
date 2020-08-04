@@ -218,6 +218,9 @@ Side effect, save the commands in `cannon-cmd-list' list."
 (defun cannon-get-cmd-candidates ()
   "Get command candidates.
 Return history plus commands candidates."
+  ;; set list if necessary
+  (unless cannon-mode (cannon-mode 1))
+  ;; get candidates
   (let* ((cmd-history-list
           (cl-loop for cmd in cannon-cmd-history-list
                    collect (car (split-string cmd))))
@@ -263,9 +266,6 @@ $PATH environment variable, i.e, \\[exec-path]."
     (when current-prefix-arg
       (read-string cannon-args-prompt))))
 
-  ;; set command candidates if necessary
-  (unless cannon-mode (cannon-mode 1))
-
   ;; get command line from minibuffer prompt
   (let* ((cmd (car (split-string cmd-line)))
          (args (and args (split-string-and-unquote args))))
@@ -289,11 +289,18 @@ $PATH environment variable, i.e, \\[exec-path]."
 
 ;;;###autoload
 (define-minor-mode cannon-mode
-  "Toggle cannon-mode application launcher.
-With a prefix argument ARG, enable Cannon-mode if ARG
-is positive, and disable it otherwise."
-  :group cannon :lighter cannon-minor-mode-string
-  ;; "Cannon" nil
+  "Define a new minor mode `cannon-mode'.
+
+This defines the toggle command `cannon-mode' and (by default)
+a control variable `cannon-mode'.
+
+Interactively with no prefix argument, it toggles the mode.
+A prefix argument enables the mode if the argument is positive,
+and disables it otherwise."
+
+  :group cannon
+  :lighter cannon-minor-mode-string
+
   (cond
    (cannon-mode
     ;; initialize lists
