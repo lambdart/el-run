@@ -107,10 +107,10 @@
   missing something, it'll be necessary to properly extend it.
 
 - =cannon-prompt= :: String to display in the initial 'minibuffer'
-  prompt (default 'Cannon').
+  prompt (default 'Launch: ').
 
-- =cannon-args-prompt= :: String to display in the initial
-  'minibuffer' prompt (default 'Args').
+- =cannon-args-prompt= :: String to display in the arguments
+  'minibuffer' prompt (default 'Args: ').
 
 - =cannon-history-size= :: A number that determines how many
   recently executed commands should be recorded (default 16).
@@ -119,9 +119,6 @@
   created process buffer (default true: t).
 
 - =cannon-kill-buffer-flag= :: Non-nil means automatically kill buffer
-  when process exits. (default true: t).
-
-- =cannon-buffer-flag= :: Non-nil means automatically kill buffer
   when process exits. (default true: t).
 
 - =cannon-cache-file= :: Cache file path, where the generated
