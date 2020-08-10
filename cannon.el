@@ -73,7 +73,7 @@
   :type '(choice string (const :tag "None" nil))
   :group 'cannon)
 
-(defcustom cannon-prompt "Cannon: "
+(defcustom cannon-prompt "Launch: "
   "String to display in the initial `minibuffer' prompt."
   :type 'string
   :group 'cannon
@@ -215,7 +215,7 @@ Side effect, save the commands in `cannon-cmd-list' list."
           (seq-uniq
            (sort executable-files #'string<)))))
 
-(defun cannon-get-cmd-candidates ()
+(defun cannon-cmd-candidates ()
   "Get command candidates.
 Return history plus commands candidates."
   ;; set list if necessary
@@ -258,7 +258,7 @@ $PATH environment variable, i.e, \\[exec-path]."
     ;; map cmd-line, if this functions was
     ;; called interactively
     (completing-read cannon-prompt
-                     (cannon-get-cmd-candidates)
+                     (cannon-cmd-candidates)
                      nil 'confirm nil
                      `(cannon-cmd-history-list . 0))
 
