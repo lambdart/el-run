@@ -10,14 +10,14 @@
 
   If you use =Exwm=, i.e., =Emacs= as also your =Xorg Window Manager=
   this package will be a good choice to launch =X11= applications,
-  like: =mpv=, =mupdf=, empowering the user experience even more.
+  like: =mpv=, =mupdf=, =chromium=, empowering the user experience.
 
-  Going into detail, Cannon's a simple lightweight application
+  Going into detail, Cannon is a simple lightweight application
   launcher that has no outside dependencies (we rely on the
   =completing-read= built-in =C= function). If you use some
   narrowing/selecting framework, like - =helm=, =ivy=, etc - it's easy
   to use =cannon= as a candidates source. Just call/invoke the
-  function =cannon-get-cmd-candidates= at some point inside you
+  function =cannon-cmd-candidates= at some point inside you
   =Elisp= interface code to get the executable candidates.
 
   The project's name itself is a joke about launching =Chrome= web
@@ -41,7 +41,7 @@
 
   - Emacs 26.3
   - Emacs 28.0.50
-    . For FreeBSD users: emacs-devel ports.
+  - For FreeBSD users: emacs-devel ports.
 
 * Installation
 ** Manually
