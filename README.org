@@ -1,4 +1,7 @@
-#+AUTHOR: esac <esac-io@tutanota.com>
+#+AUTHOR: esac
+#+EMAIL: esac-io@tutanota.com
+#+KEYWORDS: readme, app launch, elisp, emacs package
+#+LANGUAGE: en
 #+PROPERTY: header-args :tangle no
 
 * Introduction
