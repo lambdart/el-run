@@ -326,8 +326,7 @@ See `cannon-launch' for more details."
 
 ;;;###autoload
 (defun turn-off-cannon-mode ()
-  "Turn on `cannon-mode'.
-See `cannon-launch' for more details."
+  "Turn off `cannon-mode'."
   (interactive)
   (when cannon-mode (cannon-mode 0)))
 
