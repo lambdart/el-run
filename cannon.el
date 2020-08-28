@@ -33,9 +33,9 @@
 ;;
 ;;; Commentary:
 ;;
-;; Simulate Dmenu command cmd-line program to dynamic/interactive
-;; launch applications/commands regarding $PATH
-;; environment variable using Emacs vanilla builtin
+;; Simulate Dmenu application launcher program
+;; to dynamic/interactive launch applications/commands
+;; regarding $PATH environment variable using Emacs vanilla builtin
 ;; facilities (minibuffer/completions).
 ;;
 ;; If you use =Exwm=, i.e, =Emacs= also as your =Xorg Window Manager=
@@ -67,9 +67,8 @@
   :group 'extensions
   :group 'convenience)
 
-;;;###autoload
 (defcustom cannon-minor-mode-string (purecopy " Cannon")
-  "String to display in mode line when Cannon Mode is enabled; nil for none."
+  "String to be display on mode-line."
   :type '(choice string (const :tag "None" nil))
   :group 'cannon)
 
@@ -126,7 +125,7 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
   "List of internal variables.")
 
 (defvar cannon-mode nil
-  "Indicates if Cannon Mode was initialized.")
+  "Indicates if Cannon was initialized.")
 
 (defun cannon--check-default-directory ()
   "Check and return a proper `default-directory'.
@@ -307,7 +306,9 @@ and disables it otherwise."
     (cannon-set-cmd-list)
     (cannon-set-cmd-history-list)
     ;; add hook to call cannon-save-cache-file
-    (add-hook 'kill-emacs-hook 'cannon-save-cache-file))
+    (add-hook 'kill-emacs-hook 'cannon-save-cache-file)
+    ;; set cannon-mode indicator variable to true
+    (setq cannon-mode t))
    (t
     ;; clean internal variables
     (dolist (var cannon-internal-vars)
@@ -315,7 +316,9 @@ and disables it otherwise."
     ;; save cache
     (cannon-save-cache-file)
     ;; remove hook
-    (remove-hook 'kill-emacs-hook 'cannon-save-cache-file))))
+    (remove-hook 'kill-emacs-hook 'cannon-save-cache-file))
+   ;; set cannon-mode indicator variable to nil (false)
+    (setq cannon-mode nil)))
 
 ;;;###autoload
 (defun turn-on-cannon-mode ()
