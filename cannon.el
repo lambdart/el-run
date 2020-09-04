@@ -72,7 +72,7 @@
   :type '(choice string (const :tag "None" nil))
   :group 'cannon)
 
-(defcustom cannon-prompt "Launch: "
+(defcustom cannon-prompt "Cannon: "
   "String to display in the initial `minibuffer' prompt."
   :type 'string
   :group 'cannon
@@ -125,7 +125,7 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
   "List of internal variables.")
 
 (defvar cannon-mode nil
-  "Indicates if Cannon was initialized.")
+  "Indicates if Cannon minor mode was initialized.")
 
 (defun cannon--check-default-directory ()
   "Check and return a proper `default-directory'.
@@ -169,8 +169,8 @@ ARGS     optional command arguments (switches, etc)"
     ;; execute command: (create a comint in buffer)
     (apply #'make-comint-in-buffer cmd buffer program nil switches)))
 
-(defun cannon--clean-cmd-history-list ()
-  "Clean command history list, adjust its size."
+(defun cannon--set-cmd-history-size ()
+  "Adjust (set) `cannon-cmd-history-list' size."
   (when (> (length cannon-cmd-history-list)
            cannon-history-size)
     (setcdr (nthcdr (- cannon-history-size 1)
@@ -235,7 +235,7 @@ Return history plus commands candidates."
   "Add CMD-LINE (command line) to `cannon-cmd-history-list'."
   (unless (member cmd-line cannon-cmd-history-list)
     (push cmd-line cannon-cmd-history-list)
-    (cannon--clean-cmd-history-list)))
+    (cannon--set-cmd-history-size)))
 
 (defun cannon-save-cache-file ()
   "Save cannon history list to cache file."
@@ -264,6 +264,9 @@ $PATH environment variable, i.e, \\[exec-path]."
     ;; if prefix, asks for arguments
     (when current-prefix-arg
       (read-string cannon-args-prompt))))
+
+  ;; turn on cannon-mode (if necessary)
+  (turn-on-cannon-mode)
 
   ;; get command line from minibuffer prompt
   (let* ((cmd (car (split-string cmd-line)))
@@ -296,10 +299,8 @@ a control variable `cannon-mode'.
 Interactively with no prefix argument, it toggles the mode.
 A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
-
   :group cannon
   :lighter cannon-minor-mode-string
-
   (cond
    (cannon-mode
     ;; initialize lists
@@ -310,28 +311,30 @@ and disables it otherwise."
     ;; set cannon-mode indicator variable to true
     (setq cannon-mode t))
    (t
+    ;; save cache
+    (cannon-save-cache-file)
     ;; clean internal variables
     (dolist (var cannon-internal-vars)
       (set var nil))
-    ;; save cache
-    (cannon-save-cache-file)
     ;; remove hook
-    (remove-hook 'kill-emacs-hook 'cannon-save-cache-file))
-   ;; set cannon-mode indicator variable to nil (false)
-    (setq cannon-mode nil)))
+    (remove-hook 'kill-emacs-hook 'cannon-save-cache-file)
+    ;; set cannon-mode indicator variable to nil (false)
+    (setq cannon-mode nil))))
 
 ;;;###autoload
 (defun turn-on-cannon-mode ()
   "Turn on `cannon-mode'.
 See `cannon-launch' for more details."
   (interactive)
-  (unless cannon-mode (cannon-mode 1)))
+  (unless cannon-mode
+    (cannon-mode 1)))
 
 ;;;###autoload
 (defun turn-off-cannon-mode ()
   "Turn off `cannon-mode'."
   (interactive)
-  (when cannon-mode (cannon-mode 0)))
+  (when cannon-mode
+    (cannon-mode 0)))
 
 (provide 'cannon)
 ;;; cannon.el ends here
