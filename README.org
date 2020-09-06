@@ -6,22 +6,24 @@
 
 * Introduction
 
-  Cannon is a simple command launcher written in pure
+  =Cannon= is a simple library to launch =Unix= commands written in
   =Elisp=. It mimics the beloved =Dmenu= and targets =Emacs=
   aficionados that have no desired to leave their favorite
-  interpreter.
+  =Virtual Lisp Machine=.
 
-  If you use =Exwm=, i.e., =Emacs= as also your =Xorg Window Manager=
-  this package will be a good choice to launch =X11= applications,
+  If you use =Exwm=, i.e, =Emacs= as also your =X Window Manager=
+  this library will be a good choice to launch =X11= applications,
   like: =mpv=, =mupdf=, =chromium=, empowering the user experience.
 
-  Going into detail, Cannon is a simple lightweight application
-  launcher that has no outside dependencies (we rely on the
-  =completing-read= built-in =C= function). If you use some
-  narrowing/selecting framework, like - =helm=, =ivy=, etc - it's easy
-  to use =cannon= as a candidates source. Just call/invoke the
-  function =cannon-cmd-candidates= at some point inside you
-  =Elisp= interface code to get the executable candidates.
+  Going into detail, Cannon is a simple lightweight library
+  that has no outside dependencies (we rely on the =completing-read=
+  built-in =C= functions) providing ways to launch binaries from
+  =Emacs=.
+
+  If you use some narrowing/selecting framework, like - =helm=, =ivy=,
+  etc - it's easy to use =cannon= as a candidates source. Just invoke the
+  function =cannon-cmd-candidates= at some point to get the
+  executable candidates.
 
   The project's name itself is a joke about launching =Chrome= web
   browser inside =Emacs/Exwm=, a heavily metal ball which causes
