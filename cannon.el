@@ -3,7 +3,7 @@
 ;; -*- lexical-binding: t -*-
 ;;
 ;; Author: esac <esac-io@tutanota.com>
-;; Version: 0.2
+;; Version: 0.0.3 Alpha
 ;; URL: https://github.com/esac-io/cannon
 ;; Compatibility: GNU Emacs 26.3
 ;;
@@ -38,9 +38,10 @@
 ;; regarding $PATH environment variable using Emacs vanilla builtin
 ;; facilities (minibuffer/completions).
 ;;
-;; If you use =Exwm=, i.e, =Emacs= also as your =Xorg Window Manager=
+;; If you use =Exwm=, i.e, =Emacs= also as your =X Window Manager=
 ;; this package will be a good choice to launch =X11= applications,
-;; like: =mpv=, =mupdf=, empowering even more the user experience.
+;; like: =mpv=, =mupdf=, lxrandr, etc, empowering even more the
+;; user experience.
 ;;
 ;; In more details, a simple lightweight application launcher that
 ;; has no outside dependencies (we rely on the =completing-read=
@@ -127,11 +128,17 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
 (defvar cannon-mode nil
   "Indicates if Cannon minor mode was initialized.")
 
+(defun cannon--clean-internal-vars ()
+  "Clean `cannon-internal-vars'."
+  (dolist (var cannon-internal-vars)
+    (set var nil)))
+
 (defun cannon--check-default-directory ()
   "Check and return a proper `default-directory'.
 
 If default directory is at a remote location the command will
 be executed with TRAMP, this behavior isn't desired."
+
   (if (or (null default-directory)
           (file-remote-p default-directory))
       temporary-file-directory
@@ -169,13 +176,13 @@ ARGS     optional command arguments (switches, etc)"
     ;; execute command: (create a comint in buffer)
     (apply #'make-comint-in-buffer cmd buffer program nil switches)))
 
-(defun cannon--set-cmd-history-size ()
-  "Adjust (set) `cannon-cmd-history-list' size."
-  (when (> (length cannon-cmd-history-list)
-           cannon-history-size)
-    (setcdr (nthcdr (- cannon-history-size 1)
-                    cannon-cmd-history-list)
-            nil)))
+(defun cannon--adjust-cmd-history-list ()
+  "Adjust (set-rest) `cannon-cmd-history-list' based on \
+`cannon-history-size' value."
+  (let ((gt (> (length cannon-cmd-history-list) cannon-history-size))
+        (n  (- cannon-history-size 1)))
+    ;; if greater, adjust the rest of the list (cdr)
+    (when gt (setcdr (nthcdr n cannon-cmd-history-list) nil))))
 
 (defun cannon-set-cmd-history-list ()
   "Initialize `cannon-cmd-history-list' from `cannon-cache-file'."
@@ -184,8 +191,7 @@ ARGS     optional command arguments (switches, etc)"
       (with-temp-buffer
         (insert-file-contents cache-file)
         (ignore-errors
-          (setq cannon-cmd-history-list
-                (read (current-buffer))))))))
+          (setq cannon-cmd-history-list (read (current-buffer))))))))
 
 (defun cannon-set-cmd-list ()
   "Scan $PATH, i.e, \\[exec-path] for names of executable files.
@@ -214,28 +220,28 @@ Side effect, save the commands in `cannon-cmd-list' list."
           (seq-uniq
            (sort executable-files #'string<)))))
 
+(defun cannon-initialize-cmd-lists ()
+  "Initialize commands lists."
+  (cannon-set-cmd-list)
+  (cannon-set-cmd-history-list))
+
 (defun cannon-cmd-candidates ()
   "Get command candidates.
 Return history plus commands candidates."
-  ;; set list if necessary
-  (unless cannon-mode (cannon-mode 1))
+  ;; initialize commands lists, if necessary
+  (unless cannon-mode (cannon-initialize-cmd-lists))
   ;; get candidates
   (let* ((cmd-history-list
           (cl-loop for cmd in cannon-cmd-history-list
                    collect (car (split-string cmd))))
-         (candidates
-          (append cmd-history-list
-                  (cl-remove-if
-                   (lambda (cmd)
-                     (member cmd cmd-history-list))
-                   cannon-cmd-list))))
+         (candidates (append cmd-history-list cannon-cmd-list)))
     candidates))
 
 (defun cannon-add-cmd-line-to-history (cmd-line)
   "Add CMD-LINE (command line) to `cannon-cmd-history-list'."
   (unless (member cmd-line cannon-cmd-history-list)
     (push cmd-line cannon-cmd-history-list)
-    (cannon--set-cmd-history-size)))
+    (cannon--adjust-cmd-history-list)))
 
 (defun cannon-save-cache-file ()
   "Save cannon history list to cache file."
@@ -265,7 +271,7 @@ $PATH environment variable, i.e, \\[exec-path]."
     (when current-prefix-arg
       (read-string cannon-args-prompt))))
 
-  ;; turn on cannon-mode (if necessary)
+  ;; turn on cannon-mode
   (turn-on-cannon-mode)
 
   ;; get command line from minibuffer prompt
@@ -303,9 +309,8 @@ and disables it otherwise."
   :lighter cannon-minor-mode-string
   (cond
    (cannon-mode
-    ;; initialize lists
-    (cannon-set-cmd-list)
-    (cannon-set-cmd-history-list)
+    ;; initialize commands lists (history and executable)
+    (cannon-initialize-cmd-lists)
     ;; add hook to call cannon-save-cache-file
     (add-hook 'kill-emacs-hook 'cannon-save-cache-file)
     ;; set cannon-mode indicator variable to true
@@ -314,8 +319,7 @@ and disables it otherwise."
     ;; save cache
     (cannon-save-cache-file)
     ;; clean internal variables
-    (dolist (var cannon-internal-vars)
-      (set var nil))
+    (cannon--clean-internal-vars)
     ;; remove hook
     (remove-hook 'kill-emacs-hook 'cannon-save-cache-file)
     ;; set cannon-mode indicator variable to nil (false)
