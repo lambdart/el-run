@@ -36,6 +36,10 @@
 
   [[./assets/cannon.jpg]]
 
+* Version
+
+  - 0.0.3 Alpha
+
 * Dependencies
 
   - cl-lib
@@ -44,9 +48,9 @@
 
 * Tested on
 
+  - FreeBSD 12.1
   - Emacs 26.3
   - Emacs 28.0.50
-  - For FreeBSD users: emacs-devel ports.
 
 * Installation
 ** Manually
