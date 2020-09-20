@@ -103,6 +103,12 @@
   :group 'cannon
   :safe t)
 
+(defcustom cannon-debug-message-flag t
+  "Non-nil means show debug messages."
+  :type 'bool
+  :group 'cannon
+  :safe t)
+
 (defcustom cannon-cache-file
   (expand-file-name "cannon" user-emacs-directory)
   "Cannon cache file, were the generated list will be saved.
@@ -126,7 +132,14 @@ variables stored are: `cannon-cmd-list' and `cannon-cmd-history-list'."
   "List of internal variables.")
 
 (defvar cannon-mode nil
-  "Indicates if Cannon minor mode was initialized.")
+  "Just indicates if `cannon' minor mode was initialized.
+Setting this variable has no effect, use \\[cannon-mode] command.")
+
+(defun cannon--message (fmt &rest args)
+  "If cannon-debug-message-flag is non-nil invoke `message' \
+passing FMT and ARGS."
+  (when cannon-debug-message-flag
+    (apply 'message fmt args)))
 
 (defun cannon--clean-internal-vars ()
   "Clean `cannon-internal-vars'."
@@ -260,18 +273,16 @@ $PATH environment variable, i.e, \\[exec-path]."
 
   (interactive
    (list
-    ;; map cmd-line, if this functions was
-    ;; called interactively
-    (completing-read cannon-prompt
-                     (cannon-cmd-candidates)
-                     nil 'confirm nil
-                     `(cannon-cmd-history-list . 0))
+    ;; map function arguments, if this functions was called interactively
+    (completing-read
+     cannon-prompt (cannon-cmd-candidates) nil 'confirm nil
+     `(cannon-cmd-history-list . 0))
 
     ;; if prefix, asks for arguments
     (when current-prefix-arg
       (read-string cannon-args-prompt))))
 
-  ;; turn on cannon-mode
+  ;; turn on cannon-mode (if necessary)
   (turn-on-cannon-mode)
 
   ;; get command line from minibuffer prompt
@@ -279,7 +290,7 @@ $PATH environment variable, i.e, \\[exec-path]."
          (args (and args (split-string-and-unquote args))))
     ;; verify if command from command line was found
     (if (or (not cmd) (not (executable-find cmd)))
-        (message "Command not found")
+        (cannon--message "[Cannon]: Error, executable not found")
       ;; execute command (side effect: process buffer created)
       (let ((buffer (cannon--make-comint-process cmd cmd-line args)))
         (cond
@@ -293,7 +304,7 @@ $PATH environment variable, i.e, \\[exec-path]."
           (when cannon-switch-to-buffer-flag
             (switch-to-buffer buffer)))
          ;; default
-         (t (message "Creating *%s* buffer fail" cmd)))))))
+         (t (cannon--message "[Cannon]: Error, fail to create *%s* buffer" cmd)))))))
 
 ;;;###autoload
 (define-minor-mode cannon-mode
@@ -330,15 +341,13 @@ and disables it otherwise."
   "Turn on `cannon-mode'.
 See `cannon-launch' for more details."
   (interactive)
-  (unless cannon-mode
-    (cannon-mode 1)))
+  (unless cannon-mode (cannon-mode 1)))
 
 ;;;###autoload
 (defun turn-off-cannon-mode ()
   "Turn off `cannon-mode'."
   (interactive)
-  (when cannon-mode
-    (cannon-mode 0)))
+  (when cannon-mode (cannon-mode 0)))
 
 (provide 'cannon)
 ;;; cannon.el ends here
