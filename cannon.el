@@ -73,7 +73,7 @@
   :type '(choice string (const :tag "None" nil))
   :group 'cannon)
 
-(defcustom cannon-prompt "Cannon: "
+(defcustom cannon-prompt "Run: "
   "String to display in the initial `minibuffer' prompt."
   :type 'string
   :group 'cannon
@@ -307,6 +307,14 @@ $PATH environment variable, i.e, \\[exec-path]."
          (t (cannon--message "[Cannon]: Error, fail to create *%s* buffer" cmd)))))))
 
 ;;;###autoload
+(defun cannon-show-mode-state ()
+  "Show cannon minor mode state: on/off."
+  (interactive)
+  ;; show cannon mode state in echo area
+  (message "[Cannon]: mode %s"
+           (if cannon-mode "on" "off")))
+
+;;;###autoload
 (define-minor-mode cannon-mode
   "Define a new minor mode `cannon-mode'.
 
@@ -341,13 +349,21 @@ and disables it otherwise."
   "Turn on `cannon-mode'.
 See `cannon-launch' for more details."
   (interactive)
-  (unless cannon-mode (cannon-mode 1)))
+  ;; turn on if wasn't already initialized
+  (unless cannon-mode
+    (cannon-mode 1))
+  ;; show cannon mode state
+  (cannon-show-mode-state))
 
 ;;;###autoload
 (defun turn-off-cannon-mode ()
   "Turn off `cannon-mode'."
   (interactive)
-  (when cannon-mode (cannon-mode 0)))
+  ;; turn off if necessary
+  (when cannon-mode
+    (cannon-mode 0))
+  ;; show cannon mode state
+  (cannon-show-mode-state))
 
 (provide 'cannon)
 ;;; cannon.el ends here
