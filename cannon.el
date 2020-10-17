@@ -277,14 +277,9 @@ $PATH environment variable, i.e, \\[exec-path]."
     (completing-read
      cannon-prompt (cannon-cmd-candidates) nil 'confirm nil
      `(cannon-cmd-history-list . 0))
-
     ;; if prefix, asks for arguments
     (when current-prefix-arg
       (read-string cannon-args-prompt))))
-
-  ;; turn on cannon-mode (if necessary)
-  (turn-on-cannon-mode)
-
   ;; get command line from minibuffer prompt
   (let* ((cmd (car (split-string cmd-line)))
          (args (and args (split-string-and-unquote args))))
