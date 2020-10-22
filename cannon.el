@@ -256,10 +256,22 @@ Return history plus commands candidates."
     (push cmd-line cannon-cmd-history-list)
     (cannon--adjust-cmd-history-list)))
 
-(defun cannon-save-cache-file ()
+(defun cannon-write-cache-file ()
   "Save cannon history list to cache file."
   (with-temp-file (expand-file-name cannon-cache-file)
     (prin1 cannon-cmd-history-list (current-buffer))))
+
+(defun cannon-minibuffer-read (prefix-arg)
+  "Read 'cmd-line' and its arguments if PREFIX-ARG is non-nil."
+  (let ((cmd-line (completing-read cannon-prompt
+                                   (cannon-cmd-candidates)
+                                   nil 'confirm nil
+                                   `(cannon-cmd-history-list . 0)))
+        ;; asks for arguments if necessary
+        (args (when prefix-arg
+                (read-string cannon-args-prompt))))
+    ;; return cmd-line and args list
+    (list cmd-line args)))
 
 ;;;###autoload
 (defun cannon-launch (cmd-line &optional args)
@@ -270,16 +282,7 @@ ARGS - arguments in a secondary prompt.
 
 The candidates (executable names) will be parsed from
 $PATH environment variable, i.e, \\[exec-path]."
-
-  (interactive
-   (list
-    ;; map function arguments, if this functions was called interactively
-    (completing-read
-     cannon-prompt (cannon-cmd-candidates) nil 'confirm nil
-     `(cannon-cmd-history-list . 0))
-    ;; if prefix, asks for arguments
-    (when current-prefix-arg
-      (read-string cannon-args-prompt))))
+  (interactive (cannon-minibuffer-read current-prefix-arg))
   ;; get command line from minibuffer prompt
   (let* ((cmd (car (split-string cmd-line)))
          (args (and args (split-string-and-unquote args))))
@@ -319,23 +322,24 @@ a control variable `cannon-mode'.
 Interactively with no prefix argument, it toggles the mode.
 A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
-  :group cannon
+  nil
+  :group 'cannon
   :lighter cannon-minor-mode-string
   (cond
    (cannon-mode
     ;; initialize commands lists (history and executable)
     (cannon-initialize-cmd-lists)
-    ;; add hook to call cannon-save-cache-file
-    (add-hook 'kill-emacs-hook 'cannon-save-cache-file)
+    ;; add hook to call cannon-write-cache-file
+    (add-hook 'kill-emacs-hook 'cannon-write-cache-file)
     ;; set cannon-mode indicator variable to true
     (setq cannon-mode t))
    (t
     ;; save cache
-    (cannon-save-cache-file)
+    (cannon-write-cache-file)
     ;; clean internal variables
     (cannon--clean-internal-vars)
     ;; remove hook
-    (remove-hook 'kill-emacs-hook 'cannon-save-cache-file)
+    (remove-hook 'kill-emacs-hook 'cannon-write-cache-file)
     ;; set cannon-mode indicator variable to nil (false)
     (setq cannon-mode nil))))
 
