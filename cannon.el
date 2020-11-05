@@ -275,8 +275,7 @@ Return history plus commands candidates."
 (defun cannon-minibuffer-read (arg)
   "Read 'cmd-line' and its arguments if ARG is non-nil."
   ;; initialize command list
-  (unless cannon-mode
-    (turn-on-cannon-mode))
+  (unless cannon-mode (turn-on-cannon-mode))
   ;; get command line from minibuffer prompt
   (let ((cmd-line (completing-read cannon-prompt
                                    (cannon-cmd-candidates)
@@ -322,7 +321,6 @@ $PATH environment variable, i.e, \\[exec-path]."
           (cannon--debug-message
            "Error, fail to create *%s* buffer" cmd)))))))
 
-;;;###autoload
 (defun cannon-show-mode-state ()
   "Show cannon minor mode state: on/off."
   (interactive)
@@ -371,7 +369,6 @@ See `cannon-launch' for more details."
   ;; show cannon mode state
   (cannon-show-mode-state))
 
-;;;###autoload
 (defun turn-off-cannon-mode ()
   "Turn off `cannon-mode'."
   (interactive)
