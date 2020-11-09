@@ -1,9 +1,9 @@
 ;;; cannon.el --- Simple dynamic command launcher -*- lexical-binding: t -*-
 ;;
 ;; Author: esac <esac-io@tutanota.com>
-;; Version: 0.0.3 Alpha
-;; URL: https://github.com/esac-io/cannon
+;; Homepage: https://github.com/esac-io/cannon
 ;; Keywords: app, launch, unix, dmenu
+;; Version: 0.0.3 Alpha
 ;;
 ;; This file is NOT part of GNU Emacs.
 ;;
@@ -155,10 +155,8 @@ See `message' for more information about FMT and ARGS arguments."
 
 (defun cannon--check-default-directory ()
   "Check and return a proper `default-directory'.
-
 If default directory is at a remote location the command will
 be executed with TRAMP, this behavior isn't desired."
-
   (if (or (null default-directory)
           (file-remote-p default-directory))
       temporary-file-directory
@@ -290,8 +288,8 @@ Return history plus commands candidates."
 (defun cannon-launch (cmd-line &optional args)
   "Launch a system application defined by CMD-LINE.
 
-If \\[universal-argument] prefix, asks for the application
-ARGS - arguments in a secondary prompt.
+If ARGS is non-nil, asks for the application
+arguments in a secondary prompt.
 
 The candidates (executable names) will be parsed from
 $PATH environment variable, i.e, \\[exec-path]."
@@ -321,12 +319,10 @@ $PATH environment variable, i.e, \\[exec-path]."
           (cannon--debug-message
            "Error, fail to create *%s* buffer" cmd)))))))
 
-(defun cannon-show-mode-state ()
+(defun cannon-echo-mode-state ()
   "Show cannon minor mode state: on/off."
   (interactive)
-  ;; show cannon mode state in echo area
-  (message "[Cannon]: mode %s"
-           (if cannon-mode "on" "off")))
+  (message "[Cannon]: mode %s" (if cannon-mode "on" "off")))
 
 ;;;###autoload
 (define-minor-mode cannon-mode
@@ -367,7 +363,7 @@ See `cannon-launch' for more details."
   ;; turn on if wasn't already initialized
   (cannon-mode 1)
   ;; show cannon mode state
-  (cannon-show-mode-state))
+  (cannon-echo-mode-state))
 
 (defun turn-off-cannon-mode ()
   "Turn off `cannon-mode'."
@@ -375,7 +371,7 @@ See `cannon-launch' for more details."
   ;; turn off if necessary
   (cannon-mode 0)
   ;; show cannon mode state
-  (cannon-show-mode-state))
+  (cannon-echo-mode-state))
 
 (provide 'cannon)
 
