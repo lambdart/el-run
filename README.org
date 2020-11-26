@@ -1,5 +1,5 @@
-#+AUTHOR: esac
-#+EMAIL: esac-io@tutanota.com
+#+AUTHOR: lambdart
+#+EMAIL: lambdart@protonmail.com
 #+KEYWORDS: readme, app launch, elisp, emacs package
 #+LANGUAGE: en
 #+PROPERTY: header-args :tangle no
@@ -38,9 +38,10 @@
 
 * Version
 
-  - 0.0.3 Alpha
+  - 0.0.4 Alpha
 
 * Dependencies
+** Elisp
 
   - cl-lib
   - comint
@@ -48,9 +49,9 @@
 
 * Tested on
 
-  - FreeBSD 12.1
-  - Emacs 26.3
-  - Emacs 28.0.50
+  | Emacs   | 26.3 | 28.0 |
+  | FreeBSD | 12.1 |      |
+  | OpenBSD |  6.8 |      |
 
 * Installation
 ** Manually
@@ -59,7 +60,7 @@
 
    #+BEGIN_SRC sh
 
-   $ git clone https://github.com/esac-io/cannon ~/.emacs.d/site-elisp/cannon
+   $ git clone https://github.com/lambdart/cannon ~/.emacs.d/site-elisp/cannon
 
    #+END_SRC
 
@@ -115,23 +116,23 @@
   package was designed having vanilla =Emacs= in mind, so if you are
   missing something, it'll be necessary to properly extend it.
 
-- =cannon-prompt= :: String to display in the initial 'minibuffer'
-  prompt (default 'Launch: ').
+  - =cannon-prompt= :: String to display in the initial 'minibuffer'
+    prompt (default 'Launch: ').
 
-- =cannon-args-prompt= :: String to display in the arguments
-  'minibuffer' prompt (default 'Args: ').
+  - =cannon-args-prompt= :: String to display in the arguments
+    'minibuffer' prompt (default 'Args: ').
 
-- =cannon-history-size= :: A number that determines how many
-  recently executed commands should be recorded (default 16).
+  - =cannon-history-size= :: A number that determines how many
+    recently executed commands should be recorded (default 16).
 
-- =cannon-switch-to-buffer-flag= :: Non-nil means switch to the
-  created process buffer (default true: t).
+  - =cannon-switch-to-buffer-flag= :: Non-nil means switch to the
+    created process buffer (default true: t).
 
-- =cannon-kill-buffer-flag= :: Non-nil means automatically kill buffer
-  when process exits. (default true: t).
+  - =cannon-kill-buffer-flag= :: Non-nil means automatically kill buffer
+    when process exits. (default true: t).
 
-- =cannon-cache-file= :: Cache file path, where the generated
-  (command and history) lists will be saved.
+  - =cannon-cache-file= :: Cache file path, where the generated
+    (command and history) lists will be saved.
 
 * References
 
