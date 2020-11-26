@@ -1,15 +1,16 @@
 ;;; cannon.el --- Simple dynamic command launcher -*- lexical-binding: t -*-
 ;;
-;; Author: esac <esac-io@tutanota.com>
-;; Homepage: https://github.com/esac-io/cannon
+;; Author: lambdart <lambdart@protonmail.com>
+;; Maintainer: lambdart
+;; Version: 0.0.4 Alpha
+;; Homepage: https://github.com/lambdart/cannon
 ;; Keywords: app, launch, unix, dmenu
-;; Version: 0.0.3 Alpha
 ;;
 ;; This file is NOT part of GNU Emacs.
 ;;
 ;;; MIT License
 ;;
-;; Copyright (c) 2020 esac
+;; Copyright (c) 2020 lambdart
 ;;
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
