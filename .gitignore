@@ -63,6 +63,7 @@ package-lock.json
 auto-save-list
 tramp
 .\#*
+*.ede
 
 # gtags
 GPATH
@@ -91,3 +92,6 @@ GTAGS
 
 # Dirs
 .backup
+
+# Autoloads
+*-autoloads.el
