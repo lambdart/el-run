@@ -181,18 +181,14 @@ Correctly handle process exit status, etc.."
 
 (defun cannon--make-comint-process (cmd cmd-line &optional args)
   "Start the process defined by CMD, using `apply' and `make-comint-in-buffer'.
-
-CMD      primary command to be executed
-CMD-LINE command plus arguments (command line)
-ARGS     optional command arguments (switches, etc)"
-
+It's possible to use the CMD-LINE (command plus arguments).
+Optional command list of ARGS (switches)."
   ;; parse command list from command line
   (let* ((cmd-list (split-string-and-unquote cmd-line))
          (program (car cmd-list)) ; parse program name
          (buffer (generate-new-buffer-name (concat "*" cmd "*")))
          (switches (append (cdr cmd-list) args)) ; set program switches
          ;; check default-directory to avoid remote execution
-         ;; through tramp
          (default-directory (cannon--check-default-directory)))
     ;; execute command: (create a comint in buffer)
     (apply #'make-comint-in-buffer cmd buffer program nil switches)))
@@ -217,24 +213,20 @@ ARGS     optional command arguments (switches, etc)"
 (defun cannon-set-cmd-list ()
   "Scan $PATH, i.e, \\[exec-path] for names of executable files.
 Side effect, save the commands in `cannon-cmd-list' list."
-  (let* (
-         ;; get the unique valid paths
-         ;; if isn't a valid a string
-         (valid-exec-path
+  (let* ((valid-exec-path
           (seq-uniq (cl-remove-if-not #'file-exists-p
                                       (cl-remove-if-not #'stringp exec-path))))
-         ;; return a list of names of files in a directory
+         ;; set directory files
          (files (cl-mapcan
                  (lambda (dir)
                    (directory-files dir t nil nil))
                  valid-exec-path))
-         ;; filter: clean non-executable and non-regular files
+         ;; set only executable files
          (executable-files
           (mapcar #'file-name-nondirectory
                   (cl-remove-if #'file-directory-p
                                 (cl-remove-if-not
                                  #'file-executable-p files)))))
-    ;; side effect: return (set command list),
     ;; unique and sorted command candidates
     (setq cannon-cmd-list
           (seq-uniq
@@ -245,17 +237,16 @@ Side effect, save the commands in `cannon-cmd-list' list."
   (cannon-set-cmd-list)
   (cannon-set-cmd-history-list))
 
-(defun cannon-cmd-candidates ()
-  "Get command candidates.
-Return history plus commands candidates."
+(defun cannon-cmd-completions ()
+  "Return command completions (candidates)."
   ;; initialize commands lists, if necessary
-  (unless cannon-mode (cannon-initialize-cmd-lists))
-  ;; get candidates
+  (unless cannon-mode
+    (cannon-initialize-cmd-lists))
   (let* ((cmd-history-list
           (cl-loop for cmd in cannon-cmd-history-list
                    collect (car (split-string cmd))))
-         (candidates (append cmd-history-list cannon-cmd-list)))
-    candidates))
+         (completions (append cmd-history-list cannon-cmd-list)))
+    completions))
 
 (defun cannon-add-cmd-line-to-history (cmd-line)
   "Add CMD-LINE (command line) to `cannon-cmd-history-list'."
@@ -274,14 +265,15 @@ Return history plus commands candidates."
 (defun cannon-minibuffer-read (arg)
   "Read 'cmd-line' and its arguments if ARG is non-nil."
   ;; initialize command list
-  (unless cannon-mode (turn-on-cannon-mode))
+  (unless cannon-mode
+    (turn-on-cannon-mode))
   ;; get command line from minibuffer prompt
   (let ((cmd-line (completing-read cannon-prompt
-                                   (cannon-cmd-candidates)
+                                   (cannon-cmd-completions)
                                    nil 'confirm nil
                                    `(cannon-cmd-history-list . 0)))
         ;; asks for arguments if necessary
-        (args (when arg (read-string cannon-args-prompt))))
+        (args (and arg (read-string cannon-args-prompt))))
     ;; return cmd-line and args list
     (list cmd-line args)))
 
@@ -358,8 +350,7 @@ and disables it otherwise."
 
 ;;;###autoload
 (defun turn-on-cannon-mode ()
-  "Turn on `cannon-mode'.
-See `cannon-launch' for more details."
+  "Turn on `cannon-mode'."
   (interactive)
   ;; turn on if wasn't already initialized
   (cannon-mode 1)
