@@ -261,8 +261,8 @@ Optional command list of ARGS (switches)."
 
 (defun cannon-save-history ()
   "Save history to `cannon-history-file'."
-  (cannon--write-cache-file cannon-cmd-history-list
-                            cannon-history-file))
+  (cannon--write-cache-file cannon-history-file
+                            cannon-cmd-history-list))
 
 (defun cannon-minibuffer-read (arg)
   "Read 'cmd-line' and its arguments if ARG is non-nil."
