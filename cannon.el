@@ -235,17 +235,17 @@ Optional command list of ARGS (switches)."
 
 (defun cannon-set-cmd-list ()
   "Set command list from `cannon-cache-file' or create it."
-  (let ((cached-entries (cannon--read-cached-entries cannon-cache-file)))
-    (setq cannon-cmd-list
-          (or cannon-cmd-list
-              cached-entries
-              (cannon--write-cache-file cannon-cache-file
-                                        (cannon--parse-cmd-entries))))))
+  (or cannon-cmd-list
+      (let ((cached-entries (cannon--read-cached-entries cannon-cache-file)))
+        (setq cannon-cmd-list
+              (or cached-entries
+                  (cannon--write-cache-file cannon-cache-file
+                                            (cannon--parse-cmd-entries)))))))
 
 (defun cannon-set-cmd-history-list ()
   "Set command list from `cannon-history-file'."
-  (setq cannon-cmd-history-list
-        (or cannon-cmd-history-list
+  (or cannon-cmd-history-list
+      (setq cannon-cmd-history-list
             (cannon--read-cached-entries cannon-history-file))))
 
 (defun cannon-cmd-completions ()
@@ -264,13 +264,12 @@ Optional command list of ARGS (switches)."
   (cannon--write-cache-file cannon-history-file
                             cannon-cmd-history-list))
 
-(defun cannon-minibuffer-read (arg)
+(defun cannon-minibuffer-read (&optional arg)
   "Read 'cmd-line' and its arguments if ARG is non-nil."
   ;; get command line from minibuffer prompt
   (let ((cmd-line (completing-read cannon-prompt
                                    (cannon-cmd-completions)
-                                   nil 'confirm nil
-                                   `(cannon-cmd-history-list . 0)))
+                                   nil 'confirm nil))
         ;; asks for arguments if necessary
         (args (and arg (read-string cannon-args-prompt))))
     ;; return cmd-line and args list
