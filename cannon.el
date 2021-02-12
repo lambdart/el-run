@@ -307,7 +307,7 @@ $PATH environment variable, i.e, \\[exec-path]."
          (t (cannon--debug-message "Error, fail to create *%s* buffer" cmd)))))))
 
 ;;;###autoload
-(defun cannon-echo-mode-state ()
+(defun cannon-show-mode-state ()
   "Show cannon minor mode state: on|off."
   (interactive)
   (message "[Cannon]: status: %s" (if cannon-mode "on" "off")))
