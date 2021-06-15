@@ -351,7 +351,7 @@ and disables it otherwise."
   ;; turn on if wasn't already initialized
   (cannon-mode 1)
   ;; show cannon mode state
-  (cannon-echo-mode-state))
+  (cannon-show-mode-state))
 
 (defun turn-off-cannon-mode ()
   "Deactivate the minor mode."
@@ -359,7 +359,7 @@ and disables it otherwise."
   ;; turn off if necessary
   (cannon-mode 0)
   ;; show cannon mode state
-  (cannon-echo-mode-state))
+  (cannon-show-mode-state))
 
 (provide 'cannon)
 
