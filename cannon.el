@@ -156,8 +156,7 @@ See `message' for more information about FMT and ARGS arguments."
 
 (defun cannon--clean-internal-vars ()
   "Clean `cannon-internal-vars'."
-  (dolist (var cannon-internal-vars)
-    (set var nil)))
+  (mapc (lambda (v) (set v nil)) cannon-internal-vars))
 
 (defun cannon--default-directory ()
   "Return a proper `default-directory'.
@@ -195,9 +194,10 @@ Optional command list of ARGS (switches)."
     ;; execute command: (create a comint in buffer)
     (apply #'make-comint-in-buffer cmd buffer program nil switches)))
 
-(defun cannon--adjust-cmd-history-size ()
+(defun cannon--adjust-history-size ()
   "Adjust `cannon-cmd-history-list' based on `cannon-history-size' value."
-  (and (> (length cannon-cmd-history-list) cannon-history-size)
+  (and (> (length cannon-cmd-history-list)
+          cannon-history-size)
        (setcdr (nthcdr (- cannon-history-size 1)
                        cannon-cmd-history-list)
                nil)))
@@ -211,38 +211,39 @@ Optional command list of ARGS (switches)."
   "Read cache FILE entries."
   (let ((cache-file (expand-file-name file)))
     (and (file-readable-p cache-file)
-         (read (with-temp-buffer
-                 (insert-file-contents cache-file)
-                 (buffer-substring-no-properties (point-min)
-                                                 (point-max)))))))
+         (ignore-errors
+           (read (with-temp-buffer
+                   (insert-file-contents cache-file)
+                   (buffer-substring-no-properties (point-min)
+                                                   (point-max))))))))
 
 (defun cannon--parse-cmd-entries ()
   "Parse command entries defined in $PATH environment variable."
   (let* ((dirs (cl-remove-duplicates
-                (cl-remove-if-not #'file-exists-p
-                                  (cl-remove-if-not #'stringp
-                                                    exec-path))))
+                (cl-remove-if-not (lambda (f)
+                                    (and (stringp f)
+                                         (file-exists-p f)))
+                                  exec-path)))
          ;; parse regular files
-         (files (cl-mapcan (lambda (dir)
-                             (directory-files dir t nil nil))
-                           dirs))
+         (files (cl-mapcan
+                 (lambda (dir)
+                   (directory-files dir t "^[^.]"))
+                 dirs))
          ;; set only executable files: commands
          (cmds (mapcar #'file-name-nondirectory
-                       (cl-remove-if #'file-directory-p
-                                     (cl-remove-if-not
-                                      #'file-executable-p files)))))
-    (cl-remove-duplicates (sort cmds #'string<))))
+                       (cl-remove-if-not #'file-executable-p files))))
+    ;; sort and remove duplicates
+    (sort (cl-remove-duplicates cmds) #'string<)))
 
-(defun cannon-set-cmd-list ()
+(defun cannon-cmd-list ()
   "Set command list from `cannon-cache-file' or create it."
   (or cannon-cmd-list
-      (let ((cached-entries (cannon--read-cached-entries cannon-cache-file)))
-        (setq cannon-cmd-list
-              (or cached-entries
-                  (cannon--write-cache-file cannon-cache-file
-                                            (cannon--parse-cmd-entries)))))))
+      (setq cannon-cmd-list
+            (or (cannon--read-cached-entries cannon-cache-file)
+                (cannon--write-cache-file cannon-cache-file
+                                          (cannon--parse-cmd-entries))))))
 
-(defun cannon-set-cmd-history-list ()
+(defun cannon-cmd-history-list ()
   "Set command list from `cannon-history-file'."
   (or cannon-cmd-history-list
       (setq cannon-cmd-history-list
@@ -250,14 +251,14 @@ Optional command list of ARGS (switches)."
 
 (defun cannon-cmd-completions ()
   "Return command completions entries merged."
-  (cl-union (cannon-set-cmd-history-list)
-            (cannon-set-cmd-list)))
+  (cl-union (cannon-cmd-history-list)
+            (cannon-cmd-list)))
 
 (defun cannon-add-cmd-line-to-history (cmd-line)
   "Add CMD-LINE to `cannon-cmd-history-list'."
   (unless (member cmd-line cannon-cmd-history-list)
     (push cmd-line cannon-cmd-history-list)
-    (cannon--adjust-cmd-history-size)))
+    (cannon--adjust-history-size)))
 
 (defun cannon-save-history ()
   "Save history to `cannon-history-file'."
@@ -266,21 +267,17 @@ Optional command list of ARGS (switches)."
 
 (defun cannon-minibuffer-read (&optional arg)
   "Read 'cmd-line' and its arguments if ARG is non-nil."
-  ;; get command line from minibuffer prompt
-  (let ((cmd-line (completing-read cannon-prompt
-                                   (cannon-cmd-completions)
-                                   nil 'confirm nil))
-        ;; asks for arguments if necessary
-        (args (and arg (read-string cannon-args-prompt))))
-    ;; return cmd-line and args list
-    (list cmd-line args)))
+  `(,(completing-read cannon-prompt
+                      (cannon-cmd-completions)
+                      nil
+                      'confirm
+                      nil)
+    ,(and arg (read-string cannon-args-prompt))))
 
 (defun cannon-launch (cmd-line &optional args)
   "Launch a system application defined by CMD-LINE.
-
 If ARGS is non-nil, asks for the application
 arguments in a secondary prompt.
-
 The candidates (executable names) will be parsed from
 $PATH environment variable, i.e, \\[exec-path]."
   ;; maps command argument using the minibuffer facility
@@ -322,27 +319,15 @@ a control variable `cannon-mode'.
 Interactively with no prefix argument, it toggles the mode.
 A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
-
   :group 'cannon
   :global t
   :lighter cannon-minor-mode-string
-  (cond
-   (cannon-mode
-    ;; add hook to save the commands history before Emacs was killed
-    (add-hook 'kill-emacs-hook 'cannon-save-history)
-    ;; run hooks
-    (run-hooks cannon-mode-hook)
-    ;; set cannon-mode indicator variable to true
-    (setq cannon-mode t))
-   (t
-    ;; save commands history
-    (cannon-save-history)
-    ;; clean internal variables
-    (cannon--clean-internal-vars)
-    ;; remove hook
-    (remove-hook 'kill-emacs-hook 'cannon-save-history)
-    ;; set cannon-mode indicator variable to nil (false)
-    (setq cannon-mode nil))))
+  ;; clean up
+  (remove-hook 'kill-emacs-hook 'cannon-save-history)
+  (cannon-save-history)
+  (cannon--clean-internal-vars)
+  (when cannon-mode
+    (add-hook 'kill-emacs-hook 'cannon-save-history)))
 
 ;;;###autoload
 (defun turn-on-cannon-mode ()
