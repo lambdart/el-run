@@ -220,14 +220,15 @@ Optional command list of ARGS (switches)."
 (defun cannon--parse-cmd-entries ()
   "Parse command entries defined in $PATH environment variable."
   (delete-dups
-   (sort (mapcar #'file-name-nondirectory
-                 (cl-remove-if-not #'file-executable-p
-                                   (cl-mapcan
-                                    (lambda (dir)
-                                      (directory-files dir t "^[^.]"))
-                                    (cl-remove-if-not #'file-exists-p
-                                                      exec-path))))
-         #'string<)))
+   (sort
+    (mapcar #'file-name-nondirectory
+            (cl-remove-if-not #'file-executable-p
+                              (cl-mapcan
+                               (lambda (dir)
+                                 (directory-files dir t "^[^.]"))
+                               (cl-remove-if-not #'file-exists-p
+                                                 exec-path))))
+    #'string<)))
 
 (defun cannon-cmd-list ()
   "Set command list from `cannon-cache-file' or create it."
