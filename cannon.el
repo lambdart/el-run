@@ -195,12 +195,12 @@ Optional command list of ARGS (switches)."
     (apply #'make-comint-in-buffer cmd buffer program nil switches)))
 
 (defun cannon--adjust-history-size ()
-  "Adjust `cannon-cmd-history-list' based on `cannon-history-size' value."
-  (and (> (length cannon-cmd-history-list)
-          cannon-history-size)
-       (setcdr (nthcdr (- cannon-history-size 1)
-                       cannon-cmd-history-list)
-               nil)))
+  "Adjust command history list size."
+  (when (length> cannon-cmd-history-list
+                 cannon-history-size)
+    (setcdr (nthcdr (- cannon-history-size 1)
+                    cannon-cmd-history-list)
+            nil)))
 
 (defun cannon--write-cache-file (file entries)
   "Write ENTRIES in the target cache FILE."
@@ -260,14 +260,23 @@ Optional command list of ARGS (switches)."
   (cannon--write-cache-file cannon-history-file
                             cannon-cmd-history-list))
 
+(defun cannon-completions-read ()
+  "Read string from the completions list."
+  (completing-read cannon-prompt
+                   (cannon-cmd-completions)
+                   nil
+                   'confirm
+                   nil))
+
 (defun cannon-minibuffer-read (&optional arg)
   "Read 'cmd-line' and its arguments if ARG is non-nil."
-  `(,(completing-read cannon-prompt
-                      (cannon-cmd-completions)
-                      nil
-                      'confirm
-                      nil)
+  `(,(cannon-completions-read)
     ,(and arg (read-string cannon-args-prompt))))
+
+(defun cannon-read-command-and-file ()
+  "Read shell command (unix) and file arguments."
+  `(,(cannon-completions-read)
+    ,(read-file-name "file: " default-directory nil t)))
 
 (defun cannon-launch (cmd-line &optional args)
   "Launch a system application defined by CMD-LINE.
@@ -294,9 +303,18 @@ $PATH environment variable, i.e, \\[exec-path]."
           ;; set process sentinel
           (cannon--set-process-sentinel buffer)
           ;; switch to buffer if flag is non-nil
-          (and cannon-switch-to-buffer-flag (switch-to-buffer buffer)))
+          (and cannon-switch-to-buffer-flag
+               (switch-to-buffer buffer)))
          ;; default: debug message
-         (t (cannon--debug-message "Error, fail to create *%s* buffer" cmd)))))))
+         (t (cannon--debug-message "Error, fail to create *%s* buffer"
+                                   cmd)))))))
+
+;;;###autoload
+(defun cannon-command-on-file (command filename)
+  "Execute shell COMMAND using the chosen FILENAME as argument."
+  (interactive (cannon-read-command-and-file))
+  (async-shell-command
+   (format "%s %S" command (expand-file-name filename))))
 
 ;;;###autoload
 (defun cannon-show-mode-state ()
